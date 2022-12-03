@@ -1,5 +1,6 @@
-#include <string_view>
 #include "aoc.h"
+#include <fmt/std.h>
+#include <iostream>
 
 auto test_data =
 R"(1000
@@ -17,10 +18,22 @@ R"(1000
 
 10000)";
 
+template <class T>
+struct sayer;
+
 auto run_a(std::string_view s) {
-    using namespace std::string_view_literals;
-    auto elf_total = [](auto elf) { return ranges::accumulate(elf | rv::split("\n") | rv::transform(to_int), 0); };
-    return ranges::max(rv::transform(rv::split(s, "\n\n")), rv::transform(elf_total));
+    if (s.back() == '\n') {
+        // std::view::split generates empty tokens if a string ends in the token
+        // remove that trailing \n
+        s = { s.begin(), s.end() - 1 };
+    }
+
+    auto elf_total = [](auto elf) { 
+        auto item_values = elf | sv::split("\n"sv) | sv::transform(to_int);
+        return ranges::accumulate(item_values, 0); 
+    };
+    auto elf_totals = s | sv::split("\n\n"sv) | sv::transform(elf_total);
+    return ranges::max(elf_totals);
 }
 
 auto run_b(std::string_view s) {

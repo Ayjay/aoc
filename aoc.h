@@ -7,11 +7,18 @@
 #include <charconv>
 #include <exception>
 
+#include <string_view>
+using namespace std::string_view_literals;
+
 #include <range/v3/core.hpp>
 #include <range/v3/algorithm.hpp>
 #include <range/v3/numeric.hpp>
 #include <range/v3/view.hpp>
 namespace rv = ranges::view;
+
+#include <ranges>
+namespace sr = std::ranges;
+namespace sv = std::views;
 
 inline auto to_int = [](auto s) {
     int i;
@@ -23,7 +30,7 @@ inline auto to_int = [](auto s) {
 };
 
 std::string get_input(int day) {
-    auto f = std::ifstream{fmt::format("input_2022_{}.txt", day)};
+    auto f = std::ifstream{fmt::format("input{}.txt", day)};
     auto buffer = std::stringstream{};
     buffer << f.rdbuf();
     return buffer.str();
