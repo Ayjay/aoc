@@ -14,13 +14,21 @@ using namespace std::string_view_literals;
 #include <range/v3/algorithm.hpp>
 #include <range/v3/numeric.hpp>
 #include <range/v3/view.hpp>
+#include <range/v3/range/conversion.hpp>
 namespace rv = ranges::view;
 
+#include <cassert>
 #include <ranges>
 #include <algorithm>
 #include <numeric>
+#include <utility>
+#include <type_traits>
 namespace sr = std::ranges;
 namespace sv = std::views;
+
+inline auto reduce = [](auto&& r, auto&& op) {
+    return ranges::accumulate(rv::tail(r), *ranges::begin(r), std::forward<decltype(op)>(op));
+};
 
 inline auto to_int = [](auto s) {
     int i;
