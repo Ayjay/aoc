@@ -25,7 +25,7 @@ namespace sv = std::views;
 #include <range/v3/numeric.hpp>
 #include <range/v3/view.hpp>
 #include <range/v3/range/conversion.hpp>
-namespace rv = ranges::view;
+namespace rv = ranges::views;
 
 #include <boost/hana/core.hpp>
 #include <boost/hana/fold.hpp>
@@ -47,7 +47,7 @@ inline auto to_int = [](auto s) {
     int i;
     auto [ptr,ec] = std::from_chars(s.data(), s.data() + s.size(), i);
     if (ec != std::errc{}) {
-        throw std::exception("bad format");
+        throw std::runtime_error{"bad format"};
     }
     return i;
 };
