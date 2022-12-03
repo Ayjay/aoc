@@ -22,3 +22,4 @@ endfunction()
 
 aoc_day(1)
 aoc_day(2)
+aoc_day(3)

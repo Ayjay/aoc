@@ -17,6 +17,8 @@ using namespace std::string_view_literals;
 namespace rv = ranges::view;
 
 #include <ranges>
+#include <algorithm>
+#include <numeric>
 namespace sr = std::ranges;
 namespace sv = std::views;
 
