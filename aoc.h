@@ -26,6 +26,12 @@ namespace rv = ranges::view;
 namespace sr = std::ranges;
 namespace sv = std::views;
 
+#include <boost/hana/core.hpp>
+#include <boost/hana/fold.hpp>
+#include <boost/hana/concept.hpp>
+#include <boost/hana/ext/std.hpp>
+namespace hana = boost::hana;
+
 inline auto reduce = [](auto&& r, auto&& op) {
     return ranges::accumulate(rv::tail(r), *ranges::begin(r), std::forward<decltype(op)>(op));
 };

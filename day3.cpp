@@ -5,11 +5,6 @@
 #include <set>
 #include <vector>
 #include <array>
-#include <boost/hana/core.hpp>
-#include <boost/hana/fold.hpp>
-#include <boost/hana/concept.hpp>
-#include <boost/hana/ext/std.hpp>
-namespace hana = boost::hana;
 
 auto test_data =
 R"(vJrwpWtwJgWrhcsFMMfFFhFp
@@ -31,13 +26,9 @@ auto intersect = [](const std::set<char>& x, const std::set<char>& y) {
     return result;
 };
 
-template <class T> struct sayer;
-
 auto find_overlap = [](auto&& sets) {
-    using R = std::remove_cvref_t<decltype(sets)>;
-    using range_value = std::remove_cvref_t<ranges::range_value_t<R>>;
-    static_assert(std::is_same_v<range_value, std::set<char>>);
-    auto result = reduce(std::forward<decltype(sets)>(sets), intersect);
+    static_assert(std::is_same_v<ranges::range_value_t<decltype(sets)>, std::set<char>>);
+    auto result = reduce(sets, intersect);
     assert(result.size() == 1);
     return *result.begin();
 };
@@ -69,7 +60,7 @@ auto run_a(std::string_view s) {
 
 auto run_b(std::string_view s) {
     auto lines = get_lines(s);
-    auto sets = ranges::to<std::set<char>>(s);
+    auto sets = lines | sv::transform([](auto&& a) { return a | ranges::to<std::set>(); });
     return ranges::accumulate(
           sets
         | rv::chunk(3)
