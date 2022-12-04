@@ -49,9 +49,14 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return 0;
+    std::vector<std::tuple<section_range, section_range>> elf_ranges;
+    phrase_parse(s.begin(), s.end(), *(elf_range >> ',' >> elf_range), space, elf_ranges);
+    return std::ranges::count_if(elf_ranges, [](auto& range) {
+        const auto& [a, b] = range;
+        return (a & b).any();
+    });
 }
 
 int main() {
-    run(run_a, run_b, 2, -1, test_data, get_input(4));
+    run(run_a, run_b, 2, 4, test_data, get_input(4));
 }
