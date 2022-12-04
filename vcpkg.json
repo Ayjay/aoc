@@ -4,6 +4,6 @@
   "dependencies": [
     "fmt",
     "range-v3",
-    "boost-hana"
+    "boost"
   ]
 }

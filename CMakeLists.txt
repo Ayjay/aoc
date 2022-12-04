@@ -14,10 +14,13 @@ function(aoc_day DAY)
     target_link_libraries(day${DAY}
         PRIVATE 
             fmt::fmt
-            range-v3::range-v3)
+            range-v3::range-v3
+            Boost
+    )
     target_include_directories(day${DAY}
         PRIVATE
-            Boost::hana)
+            Boost
+    )
     file(
         DOWNLOAD "https://adventofcode.com/2022/day/${DAY}/input"
         HTTPHEADER "Cookie: session=${SESSION_TOKEN}"
