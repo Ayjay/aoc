@@ -1,7 +1,5 @@
 #include "aoc.h"
 #include <fmt/std.h>
-#include <iostream>
-#include <cassert>
 #include <set>
 #include <vector>
 #include <array>
@@ -14,20 +12,14 @@ wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
 ttgJtRGJQctTZtZT
 CrZsJsPPZsGzwwsLwLmpwMDw)";
 
-auto get_lines(std::string_view& s) {
-    if (s.back() == '\n')
-        s = { s.begin(), s.end() - 1 };
-    return s | sv::split("\n"sv) | sv::transform([](auto a) { return std::string_view{ begin(a), end(a) }; });
-}
-
 auto intersect = [](const std::set<char>& x, const std::set<char>& y) {
     std::set<char> result;
     std::ranges::set_intersection(x, y, std::inserter(result, result.end()));
     return result;
 };
 
-auto find_overlap = [](auto&& sets) {
-    static_assert(std::is_same_v<ranges::range_value_t<decltype(sets)>, std::set<char>>);
+auto find_overlap = []<class R>(R&& sets)
+    requires std::is_same_v<std::ranges::range_value_t<R>, std::set<char>> {
     auto result = reduce(sets, intersect);
     assert(result.size() == 1);
     return *result.begin();
