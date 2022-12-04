@@ -14,12 +14,12 @@ function(aoc_day DAY)
     target_link_libraries(day${DAY}
         PRIVATE 
             fmt::fmt
-            range-v3::range-v3
-            Boost
+            range-v3
+            ${Boost_LIBRARIES}
     )
     target_include_directories(day${DAY}
         PRIVATE
-            Boost
+            ${Boost_INCLUDE_DIRS}
     )
     file(
         DOWNLOAD "https://adventofcode.com/2022/day/${DAY}/input"
