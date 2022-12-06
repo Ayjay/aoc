@@ -72,3 +72,12 @@ inline void run(auto a_fn, auto b_fn, auto expected_a, auto expected_b, std::str
     fmt::print("Part A: {}\n", a_fn(input_data));
     fmt::print("Part B: {}\n", b_fn(input_data));
 }
+
+inline void run(auto a_fn, auto b_fn, auto test_data, std::string_view input_data) {
+    for (auto [test_data, expected_a, expected_b] : test_data) {
+        fmt::print("Test A: {}\n", a_fn(test_data) == expected_a ? "pass" : "fail");
+        fmt::print("Test B: {}\n", b_fn(test_data) == expected_b ? "pass" : "fail");
+    }
+    fmt::print("Part A: {}\n", a_fn(input_data));
+    fmt::print("Part B: {}\n", b_fn(input_data));
+}
