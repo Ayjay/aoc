@@ -43,7 +43,7 @@ struct reduce_t {
 };
 inline reduce_t reduce{};
 
-inline auto to_int = [](auto s) {
+inline auto to_int = [](std::string_view s) {
     int i;
     auto [ptr,ec] = std::from_chars(s.data(), s.data() + s.size(), i);
     if (ec != std::errc{}) {
@@ -62,8 +62,15 @@ inline std::string get_input(int day) {
     return input;
 }
 
-inline auto get_lines(std::string_view& s) {
-    return s | sv::split("\n"sv) | sv::transform([](auto a) { return std::string_view{ begin(a), end(a) }; });
+inline auto get_lines(std::string_view s, const std::string_view pattern = "\n") {
+    auto ret = std::vector<std::string_view>{};
+    auto prev = s.begin();
+    do {
+        auto it = std::search(prev, s.end(), pattern.begin(), pattern.end());
+        ret.push_back({prev, it});
+        prev = it;
+    } while (prev != s.end());
+    return ret;
 }
 
 inline void run(auto a_fn, auto b_fn, auto expected_a, auto expected_b, std::string_view test_data, std::string_view input_data) {
