@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.17)
 
 project(aoc)
 
@@ -21,10 +21,11 @@ function(aoc_day DAY)
         PRIVATE
             ${Boost_INCLUDE_DIRS}
     )
-    file(
-        DOWNLOAD "https://adventofcode.com/2022/day/${DAY}/input"
+    file(DOWNLOAD 
+        "https://adventofcode.com/2022/day/${DAY}/input"
+        "${CMAKE_CURRENT_BINARY_DIR}/input${DAY}.txt"
         HTTPHEADER "Cookie: session=${SESSION_TOKEN}"
-        ${CMAKE_CURRENT_BINARY_DIR}/input${DAY}.txt)
+    )
 endfunction()
 
 aoc_day(1)

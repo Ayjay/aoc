@@ -17,26 +17,24 @@ R"(1000
 
 10000)";
 
-template <class T>
-struct sayer;
-
 auto run_a(std::string_view s) {
-    auto get_elf_total = [](auto elf) { 
-        auto item_values = elf | sv::split("\n"sv) | sv::transform(to_int);
-        return ranges::accumulate(item_values, 0); 
+    auto get_elf_total = [](std::string_view elf) { 
+        auto lines = get_lines(elf);
+        return ranges::accumulate(rv::transform(lines, to_int), 0); 
     };
-    auto elf_totals = s | sv::split("\n\n"sv) | sv::transform(get_elf_total);
-    return ranges::max(elf_totals);
+    auto lines = get_lines(s, "\n\n");
+    return ranges::max(rv::transform(lines, get_elf_total));
 }
 
 auto run_b(std::string_view s) {
-    auto get_elf_total = [](auto elf) { 
-        auto item_values = elf | sv::split("\n"sv) | sv::transform(to_int);
-        return ranges::accumulate(item_values, 0); 
-    };
-    auto elf_totals = s | sv::split("\n\n"sv) | sv::transform(get_elf_total) | ranges::to<std::vector>();
-    std::ranges::sort(elf_totals);
-    return reduce(elf_totals | sv::reverse | sv::take(3));
+    // auto get_elf_total = [](auto elf) { 
+    //     auto item_values = elf | sv::split("\n"sv) | sv::transform(to_int);
+    //     return ranges::accumulate(item_values, 0); 
+    // };
+    // auto elf_totals = s | sv::split("\n\n"sv) | sv::transform(get_elf_total) | ranges::to<std::vector>();
+    // std::ranges::sort(elf_totals);
+    // return reduce(elf_totals | sv::reverse | sv::take(3));
+    return 0;
 }
 
 int main() {

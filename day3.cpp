@@ -41,25 +41,20 @@ int get_score(char c) {
 }
 
 auto run_a(std::string_view s) {
-    return ranges::accumulate(
-          get_lines(s)
-        | sv::transform(make_rucksack)
-        | sv::transform(find_overlap)
-        | sv::transform(get_score)
-      , 0
-    );
+    auto lines = get_lines(s);
+    auto sets = lines | sv::transform(make_rucksack);
+    auto overlaps = sets | sv::transform(find_overlap);
+    auto scores = overlaps | sv::transform(get_score);
+    return ranges::accumulate(scores , 0);
 }
 
 auto run_b(std::string_view s) {
     auto lines = get_lines(s);
     auto sets = lines | sv::transform([](auto&& a) { return a | ranges::to<std::set>(); });
-    return ranges::accumulate(
-          sets
-        | rv::chunk(3)
-        | sv::transform(find_overlap)
-        | sv::transform(get_score)
-      , 0
-    );
+    auto chunks = sets | rv::chunk(3);
+    auto overlaps = chunks | sv::transform(find_overlap);
+    auto scores = overlaps | sv::transform(get_score);
+    return ranges::accumulate(scores , 0);
 }
 
 int main() {
