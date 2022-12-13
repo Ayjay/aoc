@@ -68,8 +68,14 @@ inline auto get_lines(std::string_view s, const std::string_view pattern = "\n")
     do {
         auto it = std::search(prev, s.end(), pattern.begin(), pattern.end());
         ret.push_back({prev, it});
-        prev = it;
-    } while (prev != s.end());
+        if (it == s.end()) {
+            break;
+        }
+        else {
+            prev = it;
+            ++prev;
+        }
+    } while (true);
     return ret;
 }
 
