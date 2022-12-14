@@ -11,6 +11,7 @@ set(SESSION_TOKEN "53616c7465645f5f07bc518026bb66d98c2c822ed5fbcb6ba48451e15e7fd
 function(aoc_day DAY)
     add_executable(day${DAY} day${DAY}.cpp)
     set_property(TARGET day${DAY} PROPERTY CXX_STANDARD 20)
+    target_compile_definitions(day${DAY} PUBLIC AOC_DAY=${DAY})
     target_link_libraries(day${DAY}
         PRIVATE 
             fmt::fmt
@@ -28,10 +29,6 @@ function(aoc_day DAY)
     )
 endfunction()
 
-aoc_day(1)
-aoc_day(2)
-aoc_day(3)
-aoc_day(4)
-aoc_day(5)
-aoc_day(6)
-aoc_day(8)
+foreach(day RANGE 1 8)
+    aoc_day(${day})
+endforeach()

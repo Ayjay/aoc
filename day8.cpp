@@ -8,6 +8,7 @@
 
 #include <boost/fusion/adapted.hpp>
 namespace fusion = boost::fusion;
+
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/include/support_istream_iterator.hpp>
 
@@ -54,5 +55,5 @@ auto run_b(std::string_view s) {
 }
 
 int main() {
-    run(run_a, run_b, test_data, get_input(8));
+    run(run_a, run_b, test_data, get_input(AOC_DAY));
 }
