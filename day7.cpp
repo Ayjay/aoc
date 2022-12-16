@@ -5,6 +5,7 @@
 #include <variant>
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <boost/regex.hpp>
 
 #include <boost/fusion/adapted.hpp>
@@ -135,8 +136,27 @@ file_system parse(std::string_view s) {
     return ret;
 }
 
+void dump(auto& g) {
+    using namespace std::string_literals;
+    boost::write_graphviz(
+        std::cout, g, 
+        [&](std::ostream& out, auto v) {
+            auto name = get(boost::vertex_name, g)[v];
+            auto& size = get(file_size, g)[v];
+            if (size > 0) {
+                out << fmt::format(R"([label="{}: {}"])", name, size);
+            }
+            else {
+                out << fmt::format(R"([label="{}"])", name);
+
+            }
+        }
+    );
+}
+
 auto run_a(std::string_view s) {
     auto fs = parse(s);
+    dump(fs);
 
     return 0;
 }
