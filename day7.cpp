@@ -1,12 +1,11 @@
 #include "aoc.h"
 
 #include <tuple>
-#include <unordered_map>
-#include <variant>
+#include <memory>
+#include <vector>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/graphviz.hpp>
 #include <boost/regex.hpp>
+#include <boost/variant.hpp>
 
 #include <boost/fusion/adapted.hpp>
 namespace fusion = boost::fusion;
@@ -23,7 +22,7 @@ using ascii::space;
 using boost::spirit::x3::phrase_parse;
 
 const auto test_data = std::vector{ std::tuple
-    {R"($ cd /
+{R"($ cd /
 $ ls
 dir a
 14848514 b.txt
@@ -48,36 +47,26 @@ $ ls
 7214296 k)", 95437, -1}
 };
 
-struct directory_t;
+struct dir; struct file; 
+using child_t = boost::variant<std::unique_ptr<dir>, file>;
 
-using file_t = std::tuple<int, std::string>;
-using directory_entry_t = std::tuple<std::string, std::variant<file_t, directory_t>>;
-struct directory_t : std::vector<directory_entry_t> {
-    using std::vector<directory_entry_t>::vector;
+struct dir {
+    std::string name;
+    dir* parent;
+    std::vector<child_t> children;
+};
+struct file { 
+    std::string name;
+    int64_t size; 
 };
 
-struct file_size_t {
-    using kind = boost::vertex_property_tag;
-};
-const file_size_t file_size;
-
-using file_system = boost::adjacency_list<
-    boost::vecS,
-    boost::vecS,
-    boost::bidirectionalS,
-    boost::property<boost::vertex_name_t, std::string,
-    boost::property<file_size_t, int64_t>>
->;
-
-file_system parse(std::string_view s) {
+std::unique_ptr<dir> parse(std::string_view s) {
     auto iss = std::istringstream(std::string{ s });
     auto line = std::string{};
     auto match = boost::smatch{};
 
-    auto ret = file_system {1};
-    auto cursor = file_system::vertex_descriptor{};
-    get(boost::vertex_name, ret)[cursor] = "/";
-
+    auto ret = std::unique_ptr<dir>{ new dir{ "/", nullptr, {} } };
+    auto cursor = ret.get();
     std::getline(iss, line); //skip '$ cd /'
 
     const boost::regex cd(R"(\$ cd (.*))");
@@ -85,23 +74,14 @@ file_system parse(std::string_view s) {
     const boost::regex ls_file(R"((\d+) (.*))");
     const boost::regex ls_dir(R"(dir (.*))");
 
+    auto get_subdir_name = [](auto& a) {
+        auto subdir = boost::get<std::unique_ptr<dir>>(&a);
+        return subdir ? (*subdir)->name : "";
+    };
+
     auto navigate_to_subdir = [&](std::string_view subdir_name) {
-        //auto out_edges_its = out_edges(cursor, ret);
-        //auto out_edges_range = std::ranges::subrange{ out_edges_its.first, out_edges_its.second };
-        //auto get_child = [&](auto edge) {
-        //    return target(edge, ret);
-        //};
-        //auto child_vertices = out_edges_range | sv::transform(get_child);
-        //cursor = *std::ranges::find_if(child_vertices, [&](auto v) {
-        //    return get(boost::vertex_name, ret)[v] == subdir_name;
-        //});
-        for (auto out_edges_its = out_edges(cursor, ret); out_edges_its.first != out_edges_its.second; ++out_edges_its.first) {
-            auto u = target(*out_edges_its.first, ret);
-            if (get(boost::vertex_name, ret)[u] == subdir_name) {
-                cursor = u;
-                return;
-            }
-        }
+        auto& subdir = *boost::get<std::unique_ptr<dir>>(&*std::ranges::find(cursor->children, subdir_name, get_subdir_name));
+        cursor = subdir.get();
     };
 
     std::getline(iss, line);
@@ -109,8 +89,7 @@ file_system parse(std::string_view s) {
         if (boost::regex_match(line, match, cd)) {
             auto dir_name = match[1];
             if (dir_name == "..") {
-                auto in_edge = *in_edges(cursor, ret).first;
-                cursor = source(in_edge, ret);
+                cursor = cursor->parent;
             }
             else {
                 navigate_to_subdir(dir_name.str());
@@ -120,15 +99,10 @@ file_system parse(std::string_view s) {
         else if (boost::regex_match(line, match, ls)) {
             while (std::getline(iss, line) && line[0] != '$') {
                 if (boost::regex_match(line, match, ls_file)) {
-                    auto v = add_vertex(ret);
-                    add_edge(cursor, v, ret);
-                    get(boost::vertex_name, ret)[v] = match[2];
-                    get(file_size, ret)[v] = to_int(match[1].str());
+                    cursor->children.push_back(file{ match[2], to_int(match[1].str()) });
                 }
                 else if (boost::regex_match(line, match, ls_dir)) {
-                    auto v = add_vertex(ret);
-                    add_edge(cursor, v, ret);
-                    get(boost::vertex_name, ret)[v] = match[1];
+                    cursor->children.push_back(std::unique_ptr<dir>{ new dir{ match[1], cursor, {} } });
                 }
             }
         }
@@ -136,29 +110,39 @@ file_system parse(std::string_view s) {
     return ret;
 }
 
-void dump(auto& g) {
-    using namespace std::string_literals;
-    boost::write_graphviz(
-        std::cout, g, 
-        [&](std::ostream& out, auto v) {
-            auto name = get(boost::vertex_name, g)[v];
-            auto& size = get(file_size, g)[v];
-            if (size > 0) {
-                out << fmt::format(R"([label="{}: {}"])", name, size);
-            }
-            else {
-                out << fmt::format(R"([label="{}"])", name);
+struct get_weight {
+    std::unordered_map<dir*, int64_t> dir_weights;
+    int64_t operator()(const file& f) const {
+        return f.size;
+    }
+    int64_t operator()(const std::unique_ptr<dir>& d) {
+        auto children_weights = reduce(d->children | sv::transform([&](auto& a) { return boost::apply_visitor(*this, a); }));
+        dir_weights[d.get()] = children_weights;
+        return children_weights;
+    }
+};
 
-            }
-        }
-    );
-}
+struct printer {
+    std::string prefix = "";
+    void operator()(const file& f) const {
+        fmt::print("{}file {} ({})\n", prefix, f.name, f.size);
+    }
+
+    void operator()(const std::unique_ptr<dir>& d) {
+        fmt::print("{}dir {}\n", prefix, d->name);
+        prefix.push_back(' ');
+        for (auto& c : d->children)
+            boost::apply_visitor(*this, c);
+        prefix.pop_back();
+    }
+};
 
 auto run_a(std::string_view s) {
     auto fs = parse(s);
-    dump(fs);
-
-    return 0;
+    printer{}(fs);
+    auto weight_getter = get_weight{};
+    weight_getter(fs);
+    return reduce(weight_getter.dir_weights | rv::values | sv::filter([](auto size) { return size <= 100000; }));
 }
 
 auto run_b(std::string_view s) {
