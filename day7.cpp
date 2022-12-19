@@ -44,7 +44,7 @@ $ ls
 4060174 j
 8033020 d.log
 5626152 d.ext
-7214296 k)", 95437, -1}
+7214296 k)", 95437, 24933642}
 };
 
 struct dir; struct file; 
@@ -139,14 +139,26 @@ struct printer {
 
 auto run_a(std::string_view s) {
     auto fs = parse(s);
-    printer{}(fs);
+    //printer{}(fs);
     auto weight_getter = get_weight{};
     weight_getter(fs);
     return reduce(weight_getter.dir_weights | rv::values | sv::filter([](auto size) { return size <= 100000; }));
 }
 
 auto run_b(std::string_view s) {
-    return 0;
+    auto fs = parse(s);
+    //printer{}(fs);
+    auto weight_getter = get_weight{};
+    weight_getter(fs);
+    constexpr int64_t total_size = 70000000;
+    constexpr int64_t target_size = 30000000;
+    const auto current_size = weight_getter.dir_weights.at(fs.get());
+    const auto current_space = total_size - current_size;
+    const auto required_increase = target_size - current_space;
+    auto viable_dirs = weight_getter.dir_weights
+      | rv::values
+      | sv::filter([&](auto size) { return size >= required_increase; });
+    return *std::ranges::min_element(viable_dirs);
 }
 
 int main() {
