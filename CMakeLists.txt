@@ -29,6 +29,6 @@ function(aoc_day DAY)
     )
 endfunction()
 
-foreach(day RANGE 1 10)
+foreach(day RANGE 1 11)
     aoc_day(${day})
 endforeach()
