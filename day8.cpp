@@ -25,7 +25,7 @@ const auto test_data = std::vector{ std::tuple
 25512
 65332
 33549
-35390)", 21, 0},
+35390)", 21, 8},
 };
 
 struct cell {
@@ -97,7 +97,34 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto grid = parse(s);
+    const auto rows = grid.shape()[0];
+    const auto cols = grid.shape()[1];
+
+    auto cells = rv::cartesian_product(rv::iota(0u, rows), rv::iota(0u, cols));
+
+    auto calc_scenic_score = [&](auto coord) {
+        auto [r, c] = coord;
+        auto height = grid[r][c].height;
+
+        auto count_visibility = [&](auto view) {
+            auto end = std::ranges::find_if(view, [&](auto& c) { return c.height >= height; });
+            if (end != view.end()) ++end;
+            return std::distance(view.begin(), end);
+        };
+        auto row_to_left = grid[boost::indices[r][index_range(0, c)]];
+        auto left_visible   = count_visibility(ranges::subrange(row_to_left.rbegin(), row_to_left.rend()));
+        auto right_visible  = count_visibility(grid[boost::indices[r][index_range(c + 1, cols)]]);
+
+        auto col_to_top = grid[boost::indices[index_range(0, r)][c]];
+        auto top_visible    = count_visibility(ranges::subrange(col_to_top.rbegin(), col_to_top.rend()));
+        auto bottom_visible = count_visibility(grid[boost::indices[index_range(r+1, rows)][c]]);
+
+        return left_visible * right_visible * top_visible * bottom_visible;
+    };
+
+    auto scenic_scores = cells | rv::transform(calc_scenic_score);
+    return *ranges::max_element(scenic_scores);
 }
 
 int main() {
