@@ -28,7 +28,12 @@ const auto test_data = std::vector{ std::tuple
 35390)", 21, 0},
 };
 
-using tree_grid = boost::multi_array<int, 2>;
+struct cell {
+    int height;
+    bool visible = false;
+};
+using tree_grid = boost::multi_array<cell, 2>;
+using index_range = tree_grid::index_range;
 auto parse(std::string_view s) {
     auto lines = get_lines(s);
 
@@ -36,18 +41,59 @@ auto parse(std::string_view s) {
     for (int row = 0; row < lines.size(); ++row) {
         auto& line = lines[row];
         for (int col = 0; col < line.size(); ++col) {
-            ret[row][col] = line[col] - '0';
+            ret[row][col] = { line[col] - '0' };
         }
     }
     return ret;
 }
 
-auto from_left(const tree_grid& grid) {
+void print(auto&& rng) {
+    for (auto x : rng) {
+        for (cell c : x) {
+            fmt::print("{}{} ", c.height, c.visible ? 'o' : '_');
+        }
+        std::cout << '\n';
+    }
 }
 
 auto run_a(std::string_view s) {
     auto grid = parse(s);
-    return -1;
+    const auto rows = grid.shape()[0];
+    const auto cols = grid.shape()[1];
+
+    auto from_left =
+        rv::iota(0u, rows)
+      | rv::transform([&](auto row) { return grid[boost::indices[row][index_range(0, cols)]]; });
+
+    auto from_right = 
+        rv::iota(0u, rows)
+      | rv::transform([&](auto row) { return grid[boost::indices[row][index_range(cols-1, -1, -1)]]; });
+
+    auto from_top = 
+        rv::iota(0u, cols)
+      | rv::transform([&](auto col) { return grid[boost::indices[index_range(0, rows)][col]]; });
+
+    auto from_bottom =
+        rv::iota(0u, cols)
+      | rv::transform([&](auto col) { return grid[boost::indices[index_range(rows-1, -1, -1)][col]]; });
+
+    auto mark_visible = [](auto r) {
+        using std::begin;
+        using std::end;
+        auto it = begin(r);
+        while (it != end(r)) {
+            cell& c = *it;
+            c.visible = true;
+            it = std::find_if(it, end(r), [&](auto x) { return x.height > c.height; });
+        }
+    };
+
+    for (auto row : from_left)   { mark_visible(row); }
+    for (auto row : from_right)  { mark_visible(row); }
+    for (auto col : from_top)    { mark_visible(col); }
+    for (auto col : from_bottom) { mark_visible(col); }
+    //print(from_left);
+    return std::count_if(grid.origin(), grid.origin() + grid.num_elements(), [](const cell& c) { return c.visible; });
 }
 
 auto run_b(std::string_view s) {
