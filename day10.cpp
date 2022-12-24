@@ -1,9 +1,9 @@
 #include "aoc.h"
 
 #include <tuple>
-#include <unordered_set>
 #include <cmath>
 #include <array>
+#include <iostream>
 
 #include <boost/container_hash/hash.hpp>
 
@@ -195,7 +195,30 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return 0;
+    auto reg = 1ll;
+    auto cycle = 1;
+    auto frame = [&] {
+        auto column = (cycle - 1) % 40;
+        if (column == 0)
+            std::cout << '\n';
+        std::cout << ((column >= reg - 1 && column <= reg + 1) ? '#' : '.');
+    };
+
+    auto lines = get_lines(s);
+    for (auto command : lines) {
+        if (command == "noop") {
+            frame(); ++cycle; 
+        }
+        else {
+            int i;
+            std::from_chars(&command[5], command.data() + command.size(), i);
+            frame(); ++cycle; 
+            frame(); ++cycle; 
+            reg += i;
+        }
+    }
+    std::cout << std::flush;
+    return -1;
 }
 
 int main() {
