@@ -82,7 +82,6 @@ const auto list__def = lit('[') >> -(value_ % ',') >> ']';
 BOOST_SPIRIT_DEFINE(list_)
 
 const auto value__def = list_ | int_;
-//const auto value__def = int_ | ('[' >> (list_ % ',') >> ']');
 BOOST_SPIRIT_DEFINE(value_)
 using packet_t = std::pair<list, list>;
 
@@ -100,23 +99,34 @@ struct in_correct_order {
     }
 
     std::strong_ordering operator()(const list& left, const list& right) const {
-        return std::lexicographical_compare_three_way<list::const_iterator, list::const_iterator, in_correct_order>(
+        return std::lexicographical_compare_three_way(
             left.begin(), left.end(),
             right.begin(), right.end(),
             *this);
+    }
+
+    std::strong_ordering operator()(const value& left, const value& right) const {
+        return std::visit(*this, left, right);
     }
 };
 
 auto run_a(std::string_view s) {
     std::vector<packet_t> packets;
-    //std::vector<std::pair<value, value>> packets;
     phrase_parse(s.begin(), s.end(),
         *(list_ >> list_),
         space, packets);
-    return ranges::count_if(packets, [](const auto& packet) {
-        const auto& [left, right] = packet;
-        return in_correct_order{}(left, right) == std::strong_ordering::less;
-    });
+    return reduce(
+        rv::enumerate(packets)
+      | rv::filter([](const auto& x) {
+            const auto& [index, packet] = x;
+            const auto& [left, right] = packet;
+            return in_correct_order{}(left, right) <= 0;
+        })
+      | rv::transform([](const auto& x) {
+            const auto& [index, packet] = x;
+            return index+1;
+        })
+    );
 }
 
 auto run_b(std::string_view s) {
