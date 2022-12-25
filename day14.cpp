@@ -30,7 +30,7 @@ using boost::spirit::x3::phrase_parse;
 
 const auto test_data = std::vector{ std::tuple
 {R"(498,4 -> 498,6 -> 496,6
-503,4 -> 502,4 -> 502,9 -> 494,9)", 24, -1}
+503,4 -> 502,4 -> 502,9 -> 494,9)", 24, 93}
 };
 
 enum class tile_t {
@@ -95,7 +95,60 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -2;
+    using point_t = std::pair<int, int>;
+    auto scan = std::vector<std::vector<point_t>>{};
+    phrase_parse(s.begin(), s.end(),
+        *((int_ >> ',' >> int_) % "->"),
+        space, scan);
+    auto tiles = std::unordered_map<point_t, tile_t, boost::hash<point_t>>{};
+    auto lowest_y = std::optional<int>{};
+    for (const auto& structure : scan) {
+        auto paths = rv::zip(
+            ranges::subrange{ structure.begin(), structure.end() - 1 },
+            ranges::subrange{ structure.begin() + 1, structure.end() });
+        for (auto path : paths) {
+            auto from = std::get<0>(path);
+            auto to = std::get<1>(path);
+
+            if (!lowest_y || *lowest_y < from.second) {
+                lowest_y = from.second;
+            }
+            if (*lowest_y < to.second) {
+                lowest_y = to.second;
+            }
+
+            auto step = point_t{ to.first - from.first, to.second - from.second };
+            step = { step.first  ? step.first  / abs(step.first)  : 0, 
+                     step.second ? step.second / abs(step.second) : 0 };
+            for (; from != to; from = { from.first + step.first, from.second + step.second }) {
+                tiles[from] = tile_t::rock;
+            }
+            tiles[to] = tile_t::rock;
+        }
+    }
+    const auto sand_start = point_t{ 500,0 };
+    const auto floor_y = *lowest_y + 2;
+    for (auto sand_counter = 0; ; ++sand_counter) {
+        auto sand = sand_start;
+        auto try_move = [&](point_t to) {
+            if (to.second < floor_y && !tiles.contains(to)) {
+                sand = to;
+                return true;
+            } else {
+                return false;
+            }
+        };
+        while (true) {
+            if (!try_move({ sand.first, sand.second + 1 }) &&
+                !try_move({ sand.first - 1, sand.second + 1 }) &&
+                !try_move({ sand.first + 1, sand.second + 1 })) {
+                tiles[sand] = tile_t::sand;
+                break;
+            }
+        }
+        if (sand == sand_start)
+            return sand_counter+1;
+    }
 }
 
 int main() {
