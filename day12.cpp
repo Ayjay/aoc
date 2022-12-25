@@ -14,6 +14,7 @@
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/reverse_graph.hpp>
 
 #include <boost/fusion/adapted.hpp>
 namespace fusion = boost::fusion;
@@ -36,17 +37,17 @@ const auto test_data = std::vector{ std::tuple
 abcryxxl
 accszExk
 acctuvwj
-abdefghi)", 31, -2}
+abdefghi)", 31, 29}
 };
 
 auto run_a(std::string_view s) {
     auto lines = get_lines(s);
-    const int rows = lines.size();
-    const int cols = lines.front().size();
-    using point = std::pair<int, int>;
+    const int64_t rows = lines.size();
+    const int64_t cols = lines.front().size();
+    using point = std::pair<int64_t, int64_t>;
     using valid_point = point;
     auto point_to_id = [=](valid_point p) { return p.first * cols + p.second; };
-    auto id_to_point = [=](int id) { return point{ id / cols, id % cols }; };
+    auto id_to_point = [=](int64_t id) { return point{ id / cols, id % cols }; };
     valid_point start, end;
     auto get_height = [&](valid_point p) {
         char height = lines[p.first][p.second];
@@ -75,8 +76,8 @@ auto run_a(std::string_view s) {
 
     for (auto [row_num_unsigned,row] : rv::enumerate(lines)) {
         for (auto [col_num_unsigned, col]: rv::enumerate(row)) {
-            auto row_num = static_cast<int>(row_num_unsigned);
-            auto col_num = static_cast<int>(col_num_unsigned);
+            auto row_num = static_cast<int64_t>(row_num_unsigned);
+            auto col_num = static_cast<int64_t>(col_num_unsigned);
             auto to = valid_point{ row_num, col_num };
             if (auto top_from = validate_point({ row_num - 1, col_num })) {
                 check_add_edge(*top_from, to);
@@ -90,7 +91,7 @@ auto run_a(std::string_view s) {
     }
 
     // vector for storing distance property
-    std::vector<int> d(num_vertices(g));
+    std::vector<int64_t> d(num_vertices(g));
 
     boost::breadth_first_search(g, point_to_id(start), boost::visitor(boost::make_bfs_visitor(boost::record_distances(&d[0], boost::on_tree_edge()))));
 
@@ -98,7 +99,70 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto lines = get_lines(s);
+    const int64_t rows = lines.size();
+    const int64_t cols = lines.front().size();
+    using point = std::pair<int64_t, int64_t>;
+    using valid_point = point;
+    auto point_to_id = [=](valid_point p) { return p.first * cols + p.second; };
+    auto id_to_point = [=](int64_t id) { return point{ id / cols, id % cols }; };
+    valid_point start, end;
+    auto get_height = [&](valid_point p) {
+        char height = lines[p.first][p.second];
+        switch (height) {
+        case 'S': start = p; return 'a';
+        case 'E': end = p; return 'z';
+        default: return height;
+        }
+    };
+
+    auto validate_point = [&](point p) -> std::optional<valid_point> {
+        if (p.first >= 0 && p.first < rows &&
+            p.second >= 0 && p.second < cols)
+            return p;
+        else
+            return std::nullopt;
+    };
+
+    using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS>;
+    auto g = Graph(rows * cols);
+
+    auto check_add_edge = [&](valid_point from, valid_point to) {
+        if (get_height(to) <= get_height(from) + 1)
+            add_edge(point_to_id(from), point_to_id(to), g);
+    };
+
+    for (auto [row_num_unsigned,row] : rv::enumerate(lines)) {
+        for (auto [col_num_unsigned, col]: rv::enumerate(row)) {
+            auto row_num = static_cast<int64_t>(row_num_unsigned);
+            auto col_num = static_cast<int64_t>(col_num_unsigned);
+            auto to = valid_point{ row_num, col_num };
+            if (auto top_from = validate_point({ row_num - 1, col_num })) {
+                check_add_edge(*top_from, to);
+                check_add_edge(to, *top_from);
+            }
+            if (auto left_from = validate_point({ row_num, col_num - 1 })) {
+                check_add_edge(*left_from, to);
+                check_add_edge(to, *left_from);
+            }
+        }
+    }
+
+    // vector for storing distance property
+    std::vector<int64_t> d(num_vertices(g));
+
+    boost::breadth_first_search(
+        boost::make_reverse_graph(g),
+        point_to_id(end),
+        boost::visitor(boost::make_bfs_visitor(boost::record_distances(&d[0], boost::on_tree_edge()))));
+
+    auto points_with_distances = rv::zip(
+        rv::iota(0) | rv::transform(id_to_point),
+        d);
+
+    auto a_points = points_with_distances | rv::filter([&](auto p) { auto [pt, distance] = p; return distance > 0 && get_height(pt) == 'a'; });
+
+    return std::get<1>(*ranges::min_element(a_points, std::less{}, [](auto p) { auto [pt, distance] = p; return distance; }));
 }
 
 int main() {
