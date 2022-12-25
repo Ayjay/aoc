@@ -52,7 +52,7 @@ const auto test_data = std::vector{ std::tuple
 [[]]
 
 [1,[2,[3,[4,[5,6,7]]]],8,9]
-[1,[2,[3,[4,[5,6,0]]]],8,9])", 13, -1}
+[1,[2,[3,[4,[5,6,0]]]],8,9])", 13, 140}
 };
 
 struct value : std::variant<int, std::vector<value>> {
@@ -130,7 +130,19 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -2;
+    std::vector<list> packets;
+    phrase_parse(s.begin(), s.end(),
+        *list_,
+        space, packets);
+    auto key_1 = list{ list{2} };
+    auto key_2 = list{ list{6} };
+    packets.push_back(key_1);
+    packets.push_back(key_2);
+
+    ranges::sort(packets, [](const auto& p, const auto& q) { return in_correct_order{}(p, q) < 0; });
+
+    return (ranges::distance(packets.begin(), ranges::find(packets, key_1)) + 1) *
+           (ranges::distance(packets.begin(), ranges::find(packets, key_2)) + 1);
 }
 
 int main() {
