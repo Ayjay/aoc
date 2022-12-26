@@ -75,6 +75,8 @@ R"(##
 auto run_a(std::string_view s) {
     auto shape_sequence = shapes | rv::cycle;
     auto shape_it = begin(shape_sequence);
+    auto jet_sequence = s | rv::cycle;
+    auto jet_it = begin(jet_sequence);
     auto max_height = 0;
 
     auto occupied = std::unordered_set<point_t, boost::hash<point_t>>{};
@@ -83,8 +85,29 @@ auto run_a(std::string_view s) {
         const auto& shape = *shape_it++;
         auto pos = point_t{max_height+4, 2};
 
-        auto jet_sequence = s | rv::cycle;
-        auto jet_it = begin(jet_sequence);
+        constexpr bool render = false;
+        if (render) {
+            auto shape_rows = shape | rv::transform([](auto p) { return p.first; });
+            auto shape_height = *ranges::max_element(shape_rows);
+            for (int shape_row = shape_height; shape_row >= 0; --shape_row) {
+                fmt::print("|");
+                for (int col = 0; col < 7; ++col) {
+                    if (ranges::find(shape, point_t{ shape_row, col-pos.second }) != shape.end())
+                        fmt::print("@");
+                    else
+                        fmt::print(".");
+                }
+                fmt::print("|\n");
+            }
+            for (int row = pos.first - 1; row > 0; --row) {
+                fmt::print("|");
+                for (int col = 0; col < 7; ++col) {
+                    fmt::print("{}", occupied.contains({row,col}) ? '#' : '.');
+                }
+                fmt::print("|\n");
+            }
+            fmt::print("+-------+\n");
+        }
 
         auto move_is_blocked = [&](point_t to) {
             auto tile_is_blocked = [&](point_t p) { 
@@ -106,7 +129,7 @@ auto run_a(std::string_view s) {
             auto fall_pos = point_t{ pos.first - 1, pos.second };
             if (move_is_blocked(fall_pos)) {
                 for (auto p : shape) {
-                    auto new_tile = point_t{ fall_pos.first + p.first, fall_pos.second + p.second };
+                    auto new_tile = point_t{ pos.first + p.first, pos.second + p.second };
                     occupied.insert(new_tile);
                     max_height = std::max(max_height, new_tile.first);
                 }
