@@ -71,25 +71,39 @@ auto impossible(const scan_t& scan, int row) {
         if (overlap_radius >= 0)
             overlaps += boost::icl::interval<int>::closed(sensor.first - overlap_radius, sensor.first + overlap_radius);
     }
+
+    return overlaps;
+}
+
+auto run_a(std::string_view s, int64_t row) {
+    const auto scan = parse(s);
+    auto overlaps = impossible(scan, row);
     for (const auto [sensor, beacon] : scan) {
         if (beacon.second == row) {
             if (boost::icl::contains(overlaps, beacon.first))
                 overlaps -= boost::icl::interval<int>::closed(beacon.first, beacon.first);
         }
     }
-
     return overlaps.size();
 }
 
-auto run_a(std::string_view s, int64_t row) {
-    auto scan = parse(s);
-    return impossible(scan, row);
-}
-
 auto run_b(std::string_view s, int area_size) {
-    auto scan = parse(s);
+    const auto scan = parse(s);
 
-    return -3;
+    for (auto row = 0; row <= area_size; ++row) {
+        auto imposs = impossible(scan, row);
+        imposs -= boost::icl::interval<int>::right_open(std::numeric_limits<int>::min(), 0);
+        imposs -= boost::icl::interval<int>::left_open(area_size, std::numeric_limits<int>::max());
+        if (imposs.size() == (area_size+1) - 1) {
+            for (auto col = 0; col <= area_size; ++col) {
+                if (!contains(imposs, col)) {
+                    return static_cast<int64_t>(col) * 4000000 + row;
+                }
+            }
+        }
+    }
+
+    assert(false);
 }
 
 int main() {
