@@ -79,18 +79,23 @@ constexpr inline auto get_lines(std::string_view s, const std::string_view patte
     return ret;
 }
 
-inline void run(auto a_fn, auto b_fn, auto expected_a, auto expected_b, std::string_view test_data, std::string_view input_data) {
-    fmt::print("Test A: {}\n", a_fn(test_data) == expected_a ? "pass" : "fail");
-    fmt::print("Test B: {}\n", b_fn(test_data) == expected_b ? "pass" : "fail");
-    fmt::print("Part A: {}\n", a_fn(input_data));
-    fmt::print("Part B: {}\n", b_fn(input_data));
+inline std::string get_result_string(auto value, auto expected) {
+    if (value == expected)
+        return "pass";
+    return fmt::format("fail ({} != {})", value, expected);
 }
 
 inline void run(auto a_fn, auto b_fn, auto test_data, std::string_view input_data) {
     for (auto [test_data, expected_a, expected_b] : test_data) {
-        fmt::print("Test A: {}\n", a_fn(test_data) == expected_a ? "pass" : "fail");
-        fmt::print("Test B: {}\n", b_fn(test_data) == expected_b ? "pass" : "fail");
+        fmt::println("Test runs:");
+        fmt::println("  A: {}", get_result_string(a_fn(test_data), expected_a));
+        fmt::println("  B: {}", get_result_string(b_fn(test_data), expected_b));
     }
-    fmt::print("Part A: {}\n", a_fn(input_data));
-    fmt::print("Part B: {}\n", b_fn(input_data));
+    fmt::println("Actual");
+    fmt::println("  Part A: {}", a_fn(input_data));
+    fmt::println("  Part B: {}", b_fn(input_data));
+}
+
+inline void run(auto a_fn, auto b_fn, auto expected_a, auto expected_b, std::string_view test_data, std::string_view input_data) {
+    run(a_fn, b_fn, std::array{std::tie(test_data, expected_a, expected_b)}, input_data);
 }
