@@ -68,17 +68,17 @@ template <> struct fmt::formatter<old> : ostream_formatter {};
 using multiplicand_t = boost::variant<old, int>;
 template <> struct fmt::formatter<multiplicand_t> : ostream_formatter {};
 
-std::ostream& operator<<(std::ostream& os, const std::map<int, int64_t>& m) {
+std::ostream& operator<<(std::ostream& os, const std::map<int, long long>& m) {
     for (auto [k, v] : m) {
         os << k << ':' << v << '\n';
     }
     return os;
 }
-template <> struct fmt::formatter<std::map<int, int64_t>> : ostream_formatter {};
+template <> struct fmt::formatter<std::map<int, long long>> : ostream_formatter {};
 
 struct monkey {
     int id;
-    std::deque<int64_t> items;
+    std::deque<long long> items;
     char operation;
     multiplicand_t multiplicand;
     int test;
@@ -150,10 +150,10 @@ auto run_a(std::string_view s) {
     return ordered_activity[0] * ordered_activity[1];
 }
 
-using expected_t = std::map<int, std::map<int, int64_t>>;
+using expected_t = std::map<int, std::map<int, long long>>;
 
-std::optional<std::map<int, int64_t>> run(std::vector<monkey> monkeys, int divisor, const expected_t& expected) {
-    std::map<int, int64_t> monkey_activity;
+std::optional<std::map<int, long long>> run(std::vector<monkey> monkeys, int divisor, const expected_t& expected) {
+    std::map<int, long long> monkey_activity;
 
     auto round = [&] {
         constexpr auto log = false;
@@ -204,7 +204,7 @@ std::optional<std::map<int, int64_t>> run(std::vector<monkey> monkeys, int divis
 
 auto run_b(std::string_view s) {
     auto monkeys = parse(s);
-    auto expected = std::map<int, std::map<int, int64_t>>{};
+    auto expected = std::map<int, std::map<int, long long>>{};
     expected[1]     = std::map{ std::pair{0,2ll}, {1,4ll}, {2,3ll}, {3,6ll} };
     expected[20]    = std::map{ std::pair{0,99ll}, {1,97ll}, {2,8ll}, {3,103ll} };
     expected[1000]  = std::map{ std::pair{0,5204ll}, {1,4792ll}, {2,199ll}, {3,5192ll} };
