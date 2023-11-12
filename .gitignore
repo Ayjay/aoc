@@ -3,3 +3,4 @@ out
 *.pdb
 CMakeSettings.json
 build/
+.vscode/
