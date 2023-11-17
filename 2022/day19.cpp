@@ -8,7 +8,7 @@
 #include <deque>
 #include <unordered_set>
 #include <map>
-#include <valarray>
+#include <utility>
 
 #include <fmt/std.h>
 #include <fmt/ostream.h>
@@ -36,17 +36,53 @@ using ascii::lit;
 using boost::spirit::x3::phrase_parse;
 
 const auto test_data = std::vector{ std::tuple
-{R"()", -2, -2
-},
-{R"()", -2, -2}
+{R"(Blueprint 1:
+  Each ore robot costs 4 ore.
+  Each clay robot costs 2 ore.
+  Each obsidian robot costs 3 ore and 14 clay.
+  Each geode robot costs 2 ore and 7 obsidian.
+
+Blueprint 2:
+  Each ore robot costs 2 ore.
+  Each clay robot costs 3 ore.
+  Each obsidian robot costs 3 ore and 8 clay.
+  Each geode robot costs 3 ore and 12 obsidian.)", 9, -1}
 };
 
+struct blueprint_t {
+    int ore_ore;
+    int clay_ore;
+    int obsidian_ore;
+    int obsidian_clay;
+    int geode_ore;
+    int geode_clay;
+};
+
+BOOST_FUSION_ADAPT_STRUCT(
+    blueprint_t,
+    ore_ore, clay_ore, obsidian_ore, obsidian_clay, geode_ore, geode_clay
+)
+
+auto parse(std::string_view s) {
+    auto ret = std::vector<blueprint_t>{};
+    phrase_parse(s.begin(), s.end(),
+        *(lit_("Blueprint 1:") >> 
+          "Each ore robot costs" >> int_ "ore." >>
+          "Each clay robot costs" >> int_  >> "ore." >>
+          "Each obsidian robot costs" int_ >> "ore and" >> int_ "clay." >>
+          "Each geode robot costs" >> int_ >> "ore and" >> int_ >> "obsidian."
+        space, ret);
+    return ret;
+}
+
 auto run_a(std::string_view s) {
-    return -1;
+    auto blueprints = parse(s);
+    return -2;
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto blueprints = parse(s);
+    return -2;
 }
 
 int main() {
