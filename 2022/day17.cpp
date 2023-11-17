@@ -8,6 +8,7 @@
 #include <deque>
 #include <unordered_set>
 #include <map>
+#include <utility>
 
 #include <fmt/std.h>
 #include <fmt/ostream.h>
@@ -31,10 +32,10 @@ using ascii::lit;
 using boost::spirit::x3::phrase_parse;
 
 const auto test_data = std::vector{ std::tuple
-{R"(>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>)", 3068, -1}
+{R"(>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>)", 3068ll, 1514285714288ll}
 };
 
-using point_t = std::pair<int, int>;
+using point_t = std::pair<int64_t, int64_t>;
 using shape_t = std::vector<point_t>;
 
 constexpr auto parse_shape(std::string_view s) {
@@ -66,22 +67,22 @@ R"(#
 R"(##
 ##)"sv };
     auto ret = std::array<shape_t, std::tuple_size_v<decltype(shape_strs)>>{};
-    for (int i = 0; i < shape_strs.size(); ++i) {
+    for (int64_t i = 0; i < shape_strs.size(); ++i) {
         ret[i] = parse_shape(shape_strs[i]);
     }
     return ret;
 }();
 
-auto run_a(std::string_view s) {
+auto run_rock_sim(std::string_view s, int64_t rocks) {
     auto shape_sequence = shapes | rv::cycle;
     auto shape_it = begin(shape_sequence);
     auto jet_sequence = s | rv::cycle;
     auto jet_it = begin(jet_sequence);
-    auto max_height = 0;
+    auto max_height = 0ll;
 
     auto occupied = std::unordered_set<point_t, boost::hash<point_t>>{};
 
-    for (auto placed_shapes = 0; placed_shapes < 2022; ++placed_shapes) {
+    for (auto placed_shapes = 0ll; placed_shapes < rocks; ++placed_shapes) {
         const auto& shape = *shape_it++;
         auto pos = point_t{max_height+4, 2};
 
@@ -89,9 +90,9 @@ auto run_a(std::string_view s) {
         if (render) {
             auto shape_rows = shape | rv::transform([](auto p) { return p.first; });
             auto shape_height = *ranges::max_element(shape_rows);
-            for (int shape_row = shape_height; shape_row >= 0; --shape_row) {
+            for (int64_t shape_row = shape_height; shape_row >= 0; --shape_row) {
                 fmt::print("|");
-                for (int col = 0; col < 7; ++col) {
+                for (int64_t col = 0; col < 7; ++col) {
                     if (ranges::find(shape, point_t{ shape_row, col-pos.second }) != shape.end())
                         fmt::print("@");
                     else
@@ -99,9 +100,9 @@ auto run_a(std::string_view s) {
                 }
                 fmt::print("|\n");
             }
-            for (int row = pos.first - 1; row > 0; --row) {
+            for (int64_t row = pos.first - 1; row > 0; --row) {
                 fmt::print("|");
-                for (int col = 0; col < 7; ++col) {
+                for (int64_t col = 0; col < 7; ++col) {
                     fmt::print("{}", occupied.contains({row,col}) ? '#' : '.');
                 }
                 fmt::print("|\n");
@@ -143,8 +144,12 @@ auto run_a(std::string_view s) {
     return max_height;
 }
 
+auto run_a(std::string_view s) {
+    return run_rock_sim(s, 2022);
+}
+
 auto run_b(std::string_view s) {
-    return -2;
+    return run_rock_sim(s, 1000000000000ll);
 }
 
 int main() {
