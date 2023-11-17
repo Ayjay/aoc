@@ -92,12 +92,6 @@ BOOST_FUSION_ADAPT_STRUCT(
     id, items, operation, multiplicand, test, true_target, false_target
 )
 
-template<typename ... Ts>                                                 // (7) 
-struct overload : Ts ... { 
-    using Ts::operator() ...;
-};
-template<class... Ts> overload(Ts...) -> overload<Ts...>;
-
 auto parse(std::string_view s) {
     auto set_value = [](auto& ctx) { _val(ctx) = _attr(ctx); };
     auto set_old = [](auto& ctx) { _val(ctx) = old{}; };

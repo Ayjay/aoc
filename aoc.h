@@ -87,6 +87,8 @@ inline std::string get_result_string(auto value, auto expected) {
 
 inline void run(auto a_fn, auto b_fn, auto test_data, std::string_view input_data) {
     for (auto [test_data, expected_a, expected_b] : test_data) {
+        if (std::empty(test_data))
+            continue;
         fmt::println("Test runs:");
         fmt::println("  A: {}", get_result_string(a_fn(test_data), expected_a));
         fmt::println("  B: {}", get_result_string(b_fn(test_data), expected_b));
@@ -99,3 +101,9 @@ inline void run(auto a_fn, auto b_fn, auto test_data, std::string_view input_dat
 inline void run(auto a_fn, auto b_fn, auto expected_a, auto expected_b, std::string_view test_data, std::string_view input_data) {
     run(a_fn, b_fn, std::array{std::tie(test_data, expected_a, expected_b)}, input_data);
 }
+
+template<typename ... Ts>
+struct overload : Ts ... { 
+    using Ts::operator() ...;
+};
+template<class... Ts> overload(Ts...) -> overload<Ts...>;

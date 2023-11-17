@@ -40,6 +40,9 @@ function(aoc_day DAY)
     endif()
 endfunction()
 
-foreach(day RANGE 1 18)
+foreach(day RANGE 1 25)
     aoc_day(${day})
 endforeach()
+
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
