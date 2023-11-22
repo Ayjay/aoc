@@ -10,23 +10,12 @@
 #include <unordered_set>
 #include <map>
 #include <utility>
-#include <format>
 
 #include <fmt/std.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
 
-#include <boost/array.hpp>
-
-#include <boost/unordered_set.hpp>
-#include <boost/container_hash/hash.hpp>
-#include <boost/icl/interval_set.hpp>
-
-#include <boost/fusion/adapted.hpp>
-namespace fusion = boost::fusion;
-
 #include <boost/spirit/home/x3.hpp>
-
 namespace x3 = boost::spirit::x3;
 namespace ascii = boost::spirit::x3::ascii;
 
@@ -149,7 +138,7 @@ auto run_b(std::string_view s) {
 }
 
 int main() {
-    std::cout << std::format("[{}]\n", to_snafu(1)) << std::flush;
+    std::cout << fmt::format("[{}]\n", to_snafu(1)) << std::flush;
     assert(to_snafu(1) == "1"); assert(1 == from_snafu("1"));
     assert(to_snafu(2) == "2"); assert(2 == from_snafu("2"));
     assert(to_snafu(3) == "1="); assert(3 == from_snafu("1="));
