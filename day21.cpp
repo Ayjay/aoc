@@ -53,7 +53,7 @@ sllz: 4
 pppw: cczh / lfqf
 lgvd: ljgn * ptdq
 drzm: hmdt - zczc
-hmdt: 32)"sv, 152, -2
+hmdt: 32)"sv, 152, 301
 },
 {R"()"sv, -2, -2}
 };

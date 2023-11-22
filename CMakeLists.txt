@@ -10,7 +10,7 @@ set(SESSION_TOKEN "53616c7465645f5fbb99c62c95ced6945f3d8364383aeec73c6609d406368
 
 function(aoc_day DAY)
     add_executable(day${DAY} day${DAY}.cpp)
-    set_property(TARGET day${DAY} PROPERTY CXX_STANDARD 20)
+    set_property(TARGET day${DAY} PROPERTY CXX_STANDARD 23)
     target_compile_definitions(day${DAY} PUBLIC AOC_DAY=${DAY})
     target_link_libraries(day${DAY}
         PRIVATE 
