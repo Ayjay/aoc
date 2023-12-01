@@ -12,10 +12,25 @@ endif()
 
 set(SESSION_TOKEN "53616c7465645f5fbb99c62c95ced6945f3d8364383aeec73c6609d406368f73b4b25c9c79aa27bc123c8fc1163ca218bc0bf9ea6c5772ca80c471df5e854bbf")
 
+add_library(pch STATIC aoc.cpp)
+set_property(TARGET pch PROPERTY CXX_STANDARD 23)
+target_precompile_headers(pch PUBLIC "aoc.h")
+target_link_libraries(pch
+    PRIVATE 
+        fmt::fmt
+        range-v3
+        ${Boost_LIBRARIES}
+)
+target_include_directories(pch
+    PRIVATE
+        ${Boost_INCLUDE_DIRS}
+)
+
 function(aoc_day DAY)
     add_executable(day${DAY} day${DAY}.cpp)
     set_property(TARGET day${DAY} PROPERTY CXX_STANDARD 23)
     target_compile_definitions(day${DAY} PUBLIC AOC_DAY=${DAY})
+    target_precompile_headers(day${DAY} REUSE_FROM pch)
     target_link_libraries(day${DAY}
         PRIVATE 
             fmt::fmt
