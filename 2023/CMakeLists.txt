@@ -13,19 +13,6 @@ endif()
 
 set(SESSION_TOKEN "53616c7465645f5fbb99c62c95ced6945f3d8364383aeec73c6609d406368f73b4b25c9c79aa27bc123c8fc1163ca218bc0bf9ea6c5772ca80c471df5e854bbf")
 
-add_executable(pre_aoc pre_aoc.cpp)
-set_property(TARGET pre_aoc PROPERTY CXX_STANDARD 23)
-target_link_libraries(pre_aoc
-    PRIVATE 
-        fmt::fmt
-        range-v3
-        ${Boost_LIBRARIES}
-)
-target_include_directories(pre_aoc
-    PRIVATE
-        ${Boost_INCLUDE_DIRS}
-)
-
 string(TIMESTAMP NOW "%Y%m%d")
 function(aoc_day DAY)
     set(DAY_STRING "202312")
@@ -34,17 +21,18 @@ function(aoc_day DAY)
         string(APPEND DAY_STRING "0")
     endif()
     string(APPEND DAY_STRING ${DAY})
+    set(APP_NAME aoc23_${DAY})
     if(${NOW} GREATER_EQUAL ${DAY_STRING})
-        add_executable(day${DAY} day${DAY}.cpp)
-        set_property(TARGET day${DAY} PROPERTY CXX_STANDARD 23)
-        target_compile_definitions(day${DAY} PUBLIC AOC_DAY=${DAY})
-        target_link_libraries(day${DAY}
+        add_executable(${APP_NAME} day${DAY}.cpp)
+        set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD 23)
+        target_compile_definitions(${APP_NAME} PUBLIC AOC_DAY=${DAY})
+        target_link_libraries(${APP_NAME}
             PRIVATE 
                 fmt::fmt
                 range-v3
                 ${Boost_LIBRARIES}
         )
-        target_include_directories(day${DAY}
+        target_include_directories(${APP_NAME}
             PRIVATE
                 ${Boost_INCLUDE_DIRS}
         )

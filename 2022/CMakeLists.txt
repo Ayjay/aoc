@@ -65,5 +65,5 @@ foreach(day RANGE 1 25)
     aoc_day(${day})
 endforeach()
 
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
+# add_compile_options(-fsanitize=address)
+# add_link_options(-fsanitize=address)
