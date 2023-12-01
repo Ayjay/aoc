@@ -33,6 +33,18 @@ namespace rv = ranges::views;
 #include <boost/hana/ext/std.hpp>
 namespace hana = boost::hana;
 
+#include <boost/spirit/home/x3.hpp>
+
+namespace x3 = boost::spirit::x3;
+namespace ascii = boost::spirit::x3::ascii;
+
+using x3::char_;
+using x3::int_;
+using x3::long_long;
+using ascii::space;
+using ascii::lit;
+using boost::spirit::x3::phrase_parse;
+
 struct reduce_t {
     auto operator()(auto&& r, auto&& op) const {
         return ranges::accumulate(rv::tail(r), *ranges::begin(r), std::forward<decltype(op)>(op));
