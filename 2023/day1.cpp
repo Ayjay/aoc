@@ -1,8 +1,6 @@
 #define BOOST_SPIRIT_X3_DEBUG
 #include "aoc.h"
 
-#include "flux.hpp"
-
 #include <vector>
 #include <tuple>
 #include <string_view>
@@ -11,7 +9,7 @@ const auto test_data = std::vector{ std::tuple
 {R"(1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
-treb7uchet)", 142, -2},
+treb7uchet)", 142, 142},
 {R"(two1nine
 eightwothree
 abcone2threexyz
@@ -19,17 +17,13 @@ xtwone3four
 4nineeightseven2
 zoneight234
 7pqrstsixteen)", -2, 281},
-
 };
 
 auto run_a(std::string_view s) {
     auto get_calibration_value = [](auto line) {
-        auto digits = flux::from(line)
-            .filter([](char c) { return std::isdigit(c); });
-
-        auto nums = digits
-            .map([](char c) -> int { return c - '0'; });
-        if (digits.size() < 2) return 0;
+        std::vector<int> digits;
+        phrase_parse(line.begin(), line.end(), *(int_ | x3::omit[char_]), space, digits);
+        if (digits.size() < 1) return 0;
         return digits.front() * 10 + digits.back();
     };
     auto lines = get_lines(s);
@@ -49,6 +43,16 @@ struct digit_words : x3::symbols<int> {
             ("seven", 7)
             ("eight", 8)
             ("nine", 9)
+            ("0",0)
+            ("1",1)
+            ("2",2)
+            ("3",3)
+            ("4",4)
+            ("5",5)
+            ("6",6)
+            ("7",7)
+            ("8",8)
+            ("9",9)
             ;
     }
 };
@@ -56,8 +60,7 @@ struct digit_words : x3::symbols<int> {
 auto run_b(std::string_view s) {
     auto get_calibration_value = [](auto line) {
         std::vector<int> digits;
-        phrase_parse(line.begin(), line.end(), *(*char_ >> digit_words{}), space, digits);
-        if (digits.size() < 2) return 0;
+        phrase_parse(line.begin(), line.end(), *(digit_words{} | x3::omit[char_]), space, digits);
         return digits.front() * 10 + digits.back();
     };
     auto lines = get_lines(s);
