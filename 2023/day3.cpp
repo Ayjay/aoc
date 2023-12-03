@@ -61,7 +61,6 @@ auto make_symbol_pred(const auto& lines, int width) {
     };
 }
 
-
 auto run_a(std::string_view s) {
     const auto lines = get_lines(s);
     const auto width = lines.front().size();
@@ -78,7 +77,50 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    const auto lines = get_lines(s);
+    const auto height = lines.size();
+    const auto width = lines.front().size();
+    const auto numbers = parse(lines);
+    const auto find_adjacent_numbers = [&numbers](auto pos) {
+        const auto [row, col] = pos;
+        const auto is_adjacent = [row,col](number_t n) {
+            return n.row >= row-1 && n.row <= row+1 &&
+                n.col <= col + 1 && n.col + n.length >= col;
+        };
+
+        return numbers | rv::filter(is_adjacent) | ranges::to<std::vector>;
+    };
+
+    auto cells = rv::enumerate(lines)
+        | rv::transform([](auto r) {
+            const auto& [row, line] = r;
+            return rv::enumerate(line)
+                | rv::transform([row](auto c) {
+                const auto [col, ch] = c;
+                return std::tuple{ row, col, ch };
+            });
+        })
+        | rv::join;
+
+    const auto is_star = [](auto c) {
+        const auto [row, col, ch] = c;
+        return ch == '*';
+    };
+
+    const auto to_position = [](auto c) {
+        const auto [row, col, ch] = c;
+        return std::tuple{ row,col };
+    };
+
+    return reduce(
+        cells
+        | rv::filter(is_star)
+        | rv::transform(to_position)
+        | rv::transform(find_adjacent_numbers)
+        | rv::cache1
+        | rv::filter([](const auto& adjacents) { return adjacents.size() == 2; })
+        | rv::transform([](const auto& adjacents) { return adjacents[0].num * adjacents[1].num; })
+    );
 }
 
 int main() {
