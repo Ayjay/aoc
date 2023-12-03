@@ -17,3 +17,5 @@ ENV CMAKE_TOOLCHAIN_FILE=/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake
 # [Optional] Uncomment this section to install additional packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends autoconf autoconf-archive
+
+VOLUME /home/vscode/.cache/vcpkg
