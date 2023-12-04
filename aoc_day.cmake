@@ -47,6 +47,7 @@ function(aoc_day YEAR DAY)
                 target_include_directories(${APP_NAME}
                     PRIVATE
                         ${Boost_INCLUDE_DIRS}
+                        ${CMAKE_SOURCE_DIR}/common
                 )
             endif()
         endif()
