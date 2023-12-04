@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.22)
 
 function(aoc_day YEAR DAY)
     string(LENGTH "${DAY}" DAY_LENGTH)
