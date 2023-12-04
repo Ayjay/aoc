@@ -1,28 +1,44 @@
-FROM mcr.microsoft.com/devcontainers/cpp:1-ubuntu-22.04
+FROM ubuntu:23.10
+LABEL Description="Build environment"
 
-ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="3.22.2"
+ENV HOME /root
 
-# Optionally install the cmake for vcpkg
-COPY ./reinstall-cmake.sh /tmp/
+SHELL ["/bin/bash", "-c"]
 
-RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
-        chmod +x /tmp/reinstall-cmake.sh && /tmp/reinstall-cmake.sh ${REINSTALL_CMAKE_VERSION_FROM_SOURCE}; \
-    fi \
-    && rm -f /tmp/reinstall-cmake.sh
+# RUN apt-get update && apt-get -y --no-install-recommends install \
+#     build-essential \
+#     curl \
+#     ca-certificates \
+#     git
+# 
+# RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# RUN (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /root/.profile
+# RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; brew install gcc cmake
 
-ENV CMAKE_TOOLCHAIN_FILE=/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake
-# [Optional] Uncomment this section to install additional vcpkg ports.
-# RUN su vscode -c "${VCPKG_ROOT}/vcpkg install <your-port-name-here>"
-
-# [Optional] Uncomment this section to install additional packages.
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends \
+RUN apt-get -y update
+RUN apt-get -y install libterm-ui-perl
+RUN apt-get -y install \
+    gcc \
+    g++ \
+    cmake \
+    git \
+    curl \
+    zip \
+    unzip \
+    tar \
+    pkg-config \
+    gdb \
     autoconf \
-    autoconf-archive \
-    autotools-dev \
-    automake \
-    linux-libc-dev
+    autoconf-archive
 
-USER vscode
-RUN mkdir -p /home/vscode/.cache/vcpkg
-VOLUME /home/vscode/.cache/vcpkg
+RUN git clone --depth=1 https://github.com/Microsoft/vcpkg.git
+RUN ./vcpkg/bootstrap-vcpkg.sh
+
+ENV CMAKE_TOOLCHAIN_FILE /vcpkg/scripts/buildsystems/vcpkg.cmake
+ENV CXX /usr/bin/g++
+ENV CC /usr/bin/gcc
+
+VOLUME /src
+WORKDIR /src
+
+CMD ["tail", "-f", "/dev/null"]
