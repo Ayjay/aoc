@@ -75,7 +75,7 @@ inline std::string get_input(int day) {
     return input;
 }
 
-inline auto get_lines(std::string_view s, const std::string_view pattern = "\n") {
+constexpr inline auto get_lines(std::string_view s, const std::string_view pattern = "\n") {
     auto ret = std::vector<std::string_view>{};
     auto prev = s.begin();
     do {
