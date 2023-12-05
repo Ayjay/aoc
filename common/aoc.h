@@ -35,6 +35,7 @@ namespace hana = boost::hana;
 
 #include <boost/spirit/home/x3.hpp>
 #include <boost/fusion/include/std_tuple.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 
 namespace x3 = boost::spirit::x3;
 namespace ascii = boost::spirit::x3::ascii;
