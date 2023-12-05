@@ -24,7 +24,12 @@
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
 				}
-			}
+			},
+
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cmake-tools"
+			]
 		}
 	}
 

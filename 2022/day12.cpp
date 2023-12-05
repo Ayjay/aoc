@@ -42,12 +42,12 @@ abdefghi)", 31, 29}
 
 auto run_a(std::string_view s) {
     auto lines = get_lines(s);
-    const int64_t rows = lines.size();
-    const int64_t cols = lines.front().size();
-    using point = std::pair<int64_t, int64_t>;
+    const long long rows = lines.size();
+    const long long cols = lines.front().size();
+    using point = std::pair<long long, long long>;
     using valid_point = point;
     auto point_to_id = [=](valid_point p) { return p.first * cols + p.second; };
-    auto id_to_point = [=](int64_t id) { return point{ id / cols, id % cols }; };
+    auto id_to_point = [=](long long id) { return point{ id / cols, id % cols }; };
     valid_point start, end;
     auto get_height = [&](valid_point p) {
         char height = lines[p.first][p.second];
@@ -76,8 +76,8 @@ auto run_a(std::string_view s) {
 
     for (auto [row_num_unsigned,row] : rv::enumerate(lines)) {
         for (auto [col_num_unsigned, col]: rv::enumerate(row)) {
-            auto row_num = static_cast<int64_t>(row_num_unsigned);
-            auto col_num = static_cast<int64_t>(col_num_unsigned);
+            auto row_num = static_cast<long long>(row_num_unsigned);
+            auto col_num = static_cast<long long>(col_num_unsigned);
             auto to = valid_point{ row_num, col_num };
             if (auto top_from = validate_point({ row_num - 1, col_num })) {
                 check_add_edge(*top_from, to);
@@ -91,7 +91,7 @@ auto run_a(std::string_view s) {
     }
 
     // vector for storing distance property
-    std::vector<int64_t> d(num_vertices(g));
+    std::vector<long long> d(num_vertices(g));
 
     boost::breadth_first_search(g, point_to_id(start), boost::visitor(boost::make_bfs_visitor(boost::record_distances(&d[0], boost::on_tree_edge()))));
 
@@ -100,12 +100,12 @@ auto run_a(std::string_view s) {
 
 auto run_b(std::string_view s) {
     auto lines = get_lines(s);
-    const int64_t rows = lines.size();
-    const int64_t cols = lines.front().size();
-    using point = std::pair<int64_t, int64_t>;
+    const long long rows = lines.size();
+    const long long cols = lines.front().size();
+    using point = std::pair<long long, long long>;
     using valid_point = point;
     auto point_to_id = [=](valid_point p) { return p.first * cols + p.second; };
-    auto id_to_point = [=](int64_t id) { return point{ id / cols, id % cols }; };
+    auto id_to_point = [=](long long id) { return point{ id / cols, id % cols }; };
     valid_point start, end;
     auto get_height = [&](valid_point p) {
         char height = lines[p.first][p.second];
@@ -134,8 +134,8 @@ auto run_b(std::string_view s) {
 
     for (auto [row_num_unsigned,row] : rv::enumerate(lines)) {
         for (auto [col_num_unsigned, col]: rv::enumerate(row)) {
-            auto row_num = static_cast<int64_t>(row_num_unsigned);
-            auto col_num = static_cast<int64_t>(col_num_unsigned);
+            auto row_num = static_cast<long long>(row_num_unsigned);
+            auto col_num = static_cast<long long>(col_num_unsigned);
             auto to = valid_point{ row_num, col_num };
             if (auto top_from = validate_point({ row_num - 1, col_num })) {
                 check_add_edge(*top_from, to);
@@ -149,7 +149,7 @@ auto run_b(std::string_view s) {
     }
 
     // vector for storing distance property
-    std::vector<int64_t> d(num_vertices(g));
+    std::vector<long long> d(num_vertices(g));
 
     boost::breadth_first_search(
         boost::make_reverse_graph(g),

@@ -57,7 +57,7 @@ struct reduce_t {
 inline reduce_t reduce{};
 
 inline auto to_int = [](std::string_view s) {
-    int64_t i;
+    long long i;
     auto [ptr,ec] = std::from_chars(s.data(), s.data() + s.size(), i);
     if (ec != std::errc{}) {
         throw std::runtime_error{"bad format"};

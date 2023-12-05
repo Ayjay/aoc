@@ -47,7 +47,7 @@ Sensor at x=14, y=3: closest beacon is at x=15, y=3
 Sensor at x=20, y=1: closest beacon is at x=15, y=3)", 26ll, 56000011ll}
 };
 
-using point_t = std::pair<int64_t, int64_t>;
+using point_t = std::pair<long long, long long>;
 const x3::rule<class point_, point_t> point_ = "point";
 const auto point__def = "x=" >> long_long >> ", y=" >> long_long;
 BOOST_SPIRIT_DEFINE(point_)
@@ -75,7 +75,7 @@ auto impossible(const scan_t& scan, int row) {
     return overlaps;
 }
 
-auto run_a(std::string_view s, int64_t row) {
+auto run_a(std::string_view s, long long row) {
     const auto scan = parse(s);
     auto overlaps = impossible(scan, row);
     for (const auto [sensor, beacon] : scan) {
@@ -97,7 +97,7 @@ auto run_b(std::string_view s, int area_size) {
         if (imposs.size() == (area_size+1) - 1) {
             for (auto col = 0; col <= area_size; ++col) {
                 if (!contains(imposs, col)) {
-                    return static_cast<int64_t>(col) * 4000000 + row;
+                    return static_cast<long long>(col) * 4000000 + row;
                 }
             }
         }

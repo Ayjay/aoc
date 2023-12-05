@@ -57,7 +57,7 @@ struct dir {
 };
 struct file { 
     std::string name;
-    int64_t size; 
+    long long size; 
 };
 
 std::unique_ptr<dir> parse(std::string_view s) {
@@ -111,11 +111,11 @@ std::unique_ptr<dir> parse(std::string_view s) {
 }
 
 struct get_weight {
-    std::unordered_map<dir*, int64_t> dir_weights;
-    int64_t operator()(const file& f) const {
+    std::unordered_map<dir*, long long> dir_weights;
+    long long operator()(const file& f) const {
         return f.size;
     }
-    int64_t operator()(const std::unique_ptr<dir>& d) {
+    long long operator()(const std::unique_ptr<dir>& d) {
         auto children_weights = reduce(d->children | sv::transform([&](auto& a) { return boost::apply_visitor(*this, a); }));
         dir_weights[d.get()] = children_weights;
         return children_weights;
@@ -150,8 +150,8 @@ auto run_b(std::string_view s) {
     //printer{}(fs);
     auto weight_getter = get_weight{};
     weight_getter(fs);
-    constexpr int64_t total_size = 70000000;
-    constexpr int64_t target_size = 30000000;
+    constexpr long long total_size = 70000000;
+    constexpr long long target_size = 30000000;
     const auto current_size = weight_getter.dir_weights.at(fs.get());
     const auto current_space = total_size - current_size;
     const auto required_increase = target_size - current_space;

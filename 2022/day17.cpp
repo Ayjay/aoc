@@ -35,7 +35,7 @@ const auto test_data = std::vector{ std::tuple
 {R"(>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>)", 3068ll, 1514285714288ll}
 };
 
-using point_t = std::pair<int64_t, int64_t>;
+using point_t = std::pair<long long, long long>;
 using shape_t = std::vector<point_t>;
 
 constexpr auto parse_shape(std::string_view s) {
@@ -67,13 +67,13 @@ R"(#
 R"(##
 ##)"sv };
     auto ret = std::array<shape_t, std::tuple_size_v<decltype(shape_strs)>>{};
-    for (int64_t i = 0; i < shape_strs.size(); ++i) {
+    for (long long i = 0; i < shape_strs.size(); ++i) {
         ret[i] = parse_shape(shape_strs[i]);
     }
     return ret;
 }();
 
-auto run_rock_sim(std::string_view s, int64_t rocks) {
+auto run_rock_sim(std::string_view s, long long rocks) {
     auto shape_sequence = shapes | rv::cycle;
     auto shape_it = begin(shape_sequence);
     auto jet_sequence = s | rv::cycle;
@@ -90,9 +90,9 @@ auto run_rock_sim(std::string_view s, int64_t rocks) {
         if (render) {
             auto shape_rows = shape | rv::transform([](auto p) { return p.first; });
             auto shape_height = *ranges::max_element(shape_rows);
-            for (int64_t shape_row = shape_height; shape_row >= 0; --shape_row) {
+            for (long long shape_row = shape_height; shape_row >= 0; --shape_row) {
                 fmt::print("|");
-                for (int64_t col = 0; col < 7; ++col) {
+                for (long long col = 0; col < 7; ++col) {
                     if (ranges::find(shape, point_t{ shape_row, col-pos.second }) != shape.end())
                         fmt::print("@");
                     else
@@ -100,9 +100,9 @@ auto run_rock_sim(std::string_view s, int64_t rocks) {
                 }
                 fmt::print("|\n");
             }
-            for (int64_t row = pos.first - 1; row > 0; --row) {
+            for (long long row = pos.first - 1; row > 0; --row) {
                 fmt::print("|");
-                for (int64_t col = 0; col < 7; ++col) {
+                for (long long col = 0; col < 7; ++col) {
                     fmt::print("{}", occupied.contains({row,col}) ? '#' : '.');
                 }
                 fmt::print("|\n");
