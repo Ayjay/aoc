@@ -17,7 +17,7 @@ const auto test_data = std::vector{ std::tuple
 T55J5 684
 KK677 28
 KTJJT 220
-QQQJA 483)", 6440ll, -2ll}
+QQQJA 483)", 6440ll, 5905ll}
 };
 using hand_t = std::array<char, 5>;
 
@@ -57,8 +57,6 @@ hand_rank rank(hand_t hand) {
         return hand_rank::full_house;
     if (ranges::contains(counts, 3))
         return hand_rank::three_of_a_kind;
-    if (ranges::contains(counts, 3) && ranges::contains(counts, 2))
-        return hand_rank::full_house;
     if (ranges::count(counts, 2) == 2)
         return hand_rank::two_pair;
     if (ranges::contains(counts, 2))
@@ -98,8 +96,62 @@ auto run_a(std::string_view s) {
         }));
 }
 
+hand_rank rank_b(hand_t hand) {
+    auto cards = std::map<char, int>{};
+    auto jokers = 0;
+    for (auto c : hand) {
+        if (c == 'J')
+            ++jokers;
+        else
+            ++cards[c];
+    }
+    auto counts = cards | rv::values | ranges::to<std::vector>;
+    ranges::sort(counts, std::greater{});
+    if (jokers == 5 || counts.front() + jokers == 5)
+        return hand_rank::five_of_a_kind;
+    if (counts.front() + jokers == 4)
+        return hand_rank::four_of_a_kind;
+    if (counts[0] + counts[1] + jokers >= 5)
+        return hand_rank::full_house;
+    if (counts.front() + jokers == 3)
+        return hand_rank::three_of_a_kind;
+    if (counts[0] + counts[1] + jokers >= 4)
+        return hand_rank::two_pair;
+    if (counts.front() + jokers == 2)
+        return hand_rank::one_pair;
+    return hand_rank::high_card;
+}
+
+int card_score_b(char c) {
+    switch (c) {
+        case 'A': return 12;
+        case 'K': return 11;
+        case 'Q': return 10;
+        case 'J': return 0;
+        case 'T': return 9;
+        default: return c - '0' - 1;
+    }
+}
+
+bool compare_b(hand_t left, hand_t right) {
+    auto left_rank = rank_b(left);
+    auto right_rank = rank_b(right);
+    if (left_rank != right_rank)
+        return left_rank < right_rank;
+    return ranges::lexicographical_compare(
+        left | rv::transform(card_score_b), right | rv::transform(card_score_b));
+}
+
 auto run_b(std::string_view s) {
-    return -1;
+    auto hands = parse(s);
+    ranges::sort(hands, compare_b, [](auto hand_bid) { const auto [hand,bid] = hand_bid; return hand; });
+    return reduce(hands
+        | rv::enumerate
+        | rv::transform([](auto rank_hand) {
+             const auto [rank,hand_bid] = rank_hand;
+             const auto [hand,bid] = hand_bid;
+             return (rank+1) * bid;
+        }));
 }
 
 int main() {
