@@ -7,10 +7,10 @@
 
 const auto test_data = std::vector{ std::tuple
 {R"(Time:      7  15   30
-Distance:  9  40  200)", 288ll, -2ll}
+Distance:  9  40  200)", 288ll, 71503ll}
 };
 
-auto parse(std::string_view s) {
+auto parse_a(std::string_view s) {
     auto times_distances = std::tuple<std::vector<int>, std::vector<int>>{};
     phrase_parse(s.begin(), s.end(),
         "Time: " >> *int_ >> "Distance:" >> *int_,
@@ -33,12 +33,21 @@ const auto winning_count = [](auto race) {
 };
 
 auto run_a(std::string_view s) {
-    auto races = parse(s);
+    auto races = parse_a(s);
     return reduce(races | rv::transform(winning_count), std::multiplies{});
 }
 
+auto parse_b(std::string_view s) {
+    auto no_space = s | rv::remove(' ');
+    auto time_distance = std::tuple<long long, long long>{};
+    phrase_parse(no_space.begin(), no_space.end(),
+        "Time:" >> long_long >> "Distance:" >> long_long,
+        space, time_distance);
+    return time_distance;
+}
+
 auto run_b(std::string_view s) {
-    return -1;
+    return winning_count(parse_b(s));
 }
 
 int main() {
