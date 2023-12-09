@@ -4,6 +4,7 @@
 #include <vector>
 #include <tuple>
 #include <string_view>
+#include <boost/unordered_map.hpp>
 
 const auto test_data = std::vector{ std::tuple
 {R"(RL
@@ -25,18 +26,42 @@ ZZZ = (ZZZ, ZZZ))", 6, -2},
 auto parse(std::string_view s) {
     using ascii::alpha;
 
-    using direction_map_t = std::map<std::string, std::tuple<std::string, std::string>>;
-    auto map = std::tuple<std::string, direction_map_t>{};
+    auto instructions = std::string{};
+    auto it = s.begin();
+    phrase_parse(it, s.end(),
+        x3::lexeme[*alpha],
+        space, instructions);
 
-    phrase_parse(s.begin(), s.end(),
-        *alpha >> *(*alpha >> "=" >> directions),
-        space, map);
-    return map;
+    auto graph = std::vector<std::tuple<std::string, std::string, std::string>>{};
+    phrase_parse(it, s.end(),
+        *(*alpha >> '=' >> lit('(') >> *alpha >> ',' >> *alpha >> ')'),
+        space, graph);
+
+    auto to_map = graph
+        | rv::transform([](auto v) {
+            const auto& [node, left, right] = v;
+            return std::pair{ node, std::tuple{left,right} };
+            })
+        | ranges::to<std::unordered_map>;
+
+    return std::tuple{ instructions, to_map };
 }
 
 auto run_a(std::string_view s) {
-    auto map = parse(s);
-    return -1;
+    const auto [instructions,map] = parse(s);
+    auto steps = 0;
+    auto node = std::string{ "AAA" };
+    while (node != "ZZZ") {
+        const auto& [left, right] = map.at(node);
+        auto direction = instructions[steps % instructions.size()];
+        if (direction == 'L')
+            node = left;
+        else
+            node = right;
+        ++steps;
+    }
+
+    return steps;
 }
 
 auto run_b(std::string_view s) {
