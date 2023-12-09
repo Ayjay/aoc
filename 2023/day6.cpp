@@ -25,9 +25,9 @@ const auto winning_count = [](auto race) {
     const auto [time, distance] = race;
     const auto time_d = static_cast<double>(time);
     const auto distance_d = static_cast<double>(distance);
-    const auto sol1_pre = (time_d + std::sqrt(std::pow(time_d,2) - 4 * distance_d)) / 2.0d;
-    const auto sol1 = static_cast<long long>(std::floor(std::nextafter(sol1_pre, 0.0d)));
-    const auto sol2_pre = (time_d - std::sqrt(std::pow(time_d,2) - 4 * distance_d)) / 2.0d;
+    const auto sol1_pre = (time_d + std::sqrt(std::pow(time_d,2) - 4 * distance_d)) / 2.0;
+    const auto sol1 = static_cast<long long>(std::floor(std::nextafter(sol1_pre, 0.0)));
+    const auto sol2_pre = (time_d - std::sqrt(std::pow(time_d,2) - 4 * distance_d)) / 2.0;
     const auto sol2 = static_cast<long long>(std::ceil(std::nextafter(sol2_pre, std::numeric_limits<double>::infinity())));
     return sol1 - sol2 + 1;
 };

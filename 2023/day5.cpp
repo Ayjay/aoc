@@ -12,8 +12,6 @@
 #include <boost/icl/interval_map.hpp>
 #include <fmt/ostream.h>
 
-#include <cppcoro/generator.hpp>
-
 const auto test_data = std::vector{ std::tuple
 {R"(seeds: 79 14 55 13
 
