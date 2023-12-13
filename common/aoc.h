@@ -100,13 +100,39 @@ inline std::string get_result_string(auto value, auto expected) {
     return fmt::format("fail ({} != {})", value, expected);
 }
 
+template <class T>
+constexpr bool is_optional_v = false;
+
+template <class U>
+constexpr bool is_optional_v<std::optional<U>> = true;
+template <class U>
+constexpr bool is_optional_v<boost::optional<U>> = true;
+
+constexpr bool is_optional(auto x) {
+    return is_optional_v<decltype(x)>;
+}
+
+void run_test(auto expected, auto fn) {
+    if constexpr (is_optional_v<decltype(expected)>) {
+        if (expected) fn(*expected);
+    } else {
+        fn(expected);
+    }
+}
+
 inline void run(auto a_fn, auto b_fn, auto test_data, std::string_view input_data) {
-    for (auto [test_data, expected_a, expected_b] : test_data) {
-        if (std::empty(std::string_view{test_data}))
+    assert(!input_data.empty());
+
+    fmt::println("Test runs:");
+    for (const auto [run,test_set] : rv::enumerate(test_data)) {
+        const auto [test_str, expected_a, expected_b] = test_set;
+        fmt::println(" Test case {}:", run+1);
+        if (std::empty(std::string_view{test_str}))
             continue;
-        fmt::println("Test runs:");
-        fmt::println("  A: {}", get_result_string(a_fn(test_data), expected_a));
-        fmt::println("  B: {}", get_result_string(b_fn(test_data), expected_b));
+        run_test(expected_a, 
+            [&](auto expected) { fmt::println("  A: {}", get_result_string(a_fn(test_str), expected)); });
+        run_test(expected_b, 
+            [&](auto expected) { fmt::println("  B: {}", get_result_string(b_fn(test_str), expected)); });
     }
     fmt::println("Actual");
     fmt::println("  Part A: {}", a_fn(input_data));

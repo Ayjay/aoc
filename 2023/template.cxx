@@ -6,7 +6,7 @@
 #include <string_view>
 
 const auto test_data = std::vector{ std::tuple
-{R"()", -2, -2}
+{R"()", no_result, no_result}
 };
 
 
