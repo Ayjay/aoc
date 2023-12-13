@@ -5,10 +5,10 @@
 #include <tuple>
 #include <string_view>
 
-const auto test_data = std::vector{ std::tuple
-{R"()", no_result, no_result}
+using result_type = long long;
+const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
+{R"()", {}, {}}
 };
-
 
 auto run_a(std::string_view s) {
     return -1;
