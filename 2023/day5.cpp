@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <chrono>
 #include <iostream>
+#include <map>
 
 #include <boost/unordered_map.hpp>
 #include <boost/icl/interval_map.hpp>
@@ -156,7 +157,7 @@ auto parse_b(std::string_view s) {
                 return rng.lo;
             });
 
-            return std::tuple{ std::move(from), std::tuple{ std::move(to), std::move(map) } };
+            return std::pair{ std::move(from), std::tuple{ std::move(to), std::move(map) } };
         })
         | ranges::to<std::map>;
 
