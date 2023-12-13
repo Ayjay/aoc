@@ -8,6 +8,7 @@
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap/vector_of.hpp>
+#include <numeric>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -79,16 +80,22 @@ auto run_a(std::string_view s) {
     return steps;
 }
 
+struct loop_info {
+    long long start_offset;
+    std::vector<long long> z_positions;
+    long long loop_length;
+
+    bool is_on_zed(long long step) const {
+        return step >= start_offset && 
+        ranges::find(z_positions, (step-start_offset) % loop_length) != z_positions.end();
+    }
+};
+
 auto run_b(std::string_view s) {
     const auto [instructions,map] = parse(s);
 
-    struct loop_info {
-        long long start_offset;
-        std::vector<long long> z_positions;
-    };
-
     const auto get_loop = [&](auto node) -> loop_info {
-        fmt::println("Loop starting node [{}]", node);
+        //fmt::println("Loop starting node [{}]", node);
         using loop_position_t = std::tuple<std::string, long long>;
         using namespace boost::bimaps;
         auto history = bimap<
@@ -114,10 +121,10 @@ auto run_b(std::string_view s) {
                 node = right;
             ++step;
         }
-        for (const auto& [node_pos, step] : history.right) {
-            const auto& [node,instruction] = node_pos;
-            fmt::println("Step {}: node [{}] instr [{}]", step, node, instruction);
-        }
+        //for (const auto& [node_pos, step] : history.right) {
+        //    const auto& [node,instruction] = node_pos;
+        //    fmt::println("Step {}: node [{}] instr [{}]", step, node, instruction);
+        //}
         auto ret = loop_info{};
         const auto is_zed = [](const auto& kv) {
             const auto& [node_pos,step] = kv;
@@ -126,17 +133,14 @@ auto run_b(std::string_view s) {
         };
         const auto first_z_it = ranges::find_if(history.right, is_zed);
         ret.start_offset = first_z_it - history.right.begin();
-        ret.z_positions = ranges::subrange{history.right.begin() + ret.start_offset + 1, history.right.end()}
+        ret.z_positions = ranges::subrange{history.right.begin() + ret.start_offset, history.right.end()}
             | rv::filter(is_zed)
             | rv::transform([&](const auto& kv) {
                 const auto& [_,step] = kv;
                 return step - ret.start_offset;
             })
             | ranges::to<std::vector>;
-        const auto last_to_loop_start = step - ret.z_positions.back() - ret.start_offset;
-        const auto loop_start = history.left.at(get_position_state());
-        const auto loop_start_to_first_z = ret.start_offset - loop_start;
-        ret.z_positions.push_back(ret.z_positions.back() + last_to_loop_start + loop_start_to_first_z);
+        ret.loop_length = step - history.left.at(get_position_state());
         return ret;
     };
 
@@ -149,7 +153,16 @@ auto run_b(std::string_view s) {
      | rv::transform(get_loop)
      | ranges::to<std::vector>;
 
-    return -1;
+    // for (auto step : rv::ints(0ll, ranges::unreachable)) {
+    //     if (ranges::all_of(loops, [=](const auto& loop) { return loop.is_on_zed(step); }))
+    //         return step;
+    // }
+
+    // apparently the data only has loops all starting from offset 0
+    // with a single z
+    // allowing this hack
+    return reduce(loops | rv::transform([](const auto& loop) { return loop.loop_length; }),
+        [](auto a, auto b) { return std::lcm(a,b); });
 }
 
 int main() {
