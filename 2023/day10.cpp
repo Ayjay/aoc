@@ -23,12 +23,12 @@ SJ.L7
 LJ...)", 8, {}}
 };
 
-using point_t = std::tuple<int,int>;
+using point_t = std::tuple<long long,long long>;
 auto parse_grid(std::string_view s) {
     auto ret = std::unordered_map<point_t, char, boost::hash<point_t>>{};
     const auto lines = get_lines(s);
     for (const auto [row,line] : rv::enumerate(lines)) {
-        for (auto [col,c] : rv::enumerate(line)) {
+        for (const auto [col,c] : rv::enumerate(line)) {
             ret[{row,col}] = c;
         }
     }
