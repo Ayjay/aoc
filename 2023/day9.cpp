@@ -9,7 +9,7 @@ using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
 {R"(0 3 6 9 12 15
 1 3 6 10 15 21
-10 13 16 21 30 45)", 114, {}}
+10 13 16 21 30 45)", 114, 2}
 };
 
 auto parse(std::string_view s) {
@@ -31,13 +31,18 @@ auto adjacent_difference(const auto& rng) {
     return rng | rv::sliding(2) | rv::transform(diff);
 }
 
-const auto next_value = [](const auto& history) {
+auto build_layers(const auto& history) {
     auto seq = &history;
     auto seqs = std::vector<std::vector<long long>>{};
     do {
         seqs.push_back(adjacent_difference(*seq) | ranges::to<std::vector>);
         seq = &seqs.back();
     } while (ranges::any_of(*seq, [](auto i) { return i != 0; }));
+    return seqs;
+}
+
+const auto next_value = [](const auto& history) {
+    auto seqs = build_layers(history);
     auto extrapolated = 0ll;
     for (auto s : seqs | rv::reverse | rv::drop(1)) {
         extrapolated += s.back();
@@ -50,8 +55,18 @@ auto run_a(std::string_view s) {
     return reduce(histories | rv::transform(next_value));
 }
 
+const auto prev_value = [](const auto& history) {
+    auto seqs = build_layers(history);
+    auto extrapolated = 0ll;
+    for (auto s : seqs | rv::reverse | rv::drop(1)) {
+        extrapolated = s.front() - extrapolated;
+    }
+    return history.front() - extrapolated;
+};
+
 auto run_b(std::string_view s) {
-    return -1;
+    auto histories = parse(s);
+    return reduce(histories | rv::transform(prev_value));
 }
 
 int main() {
