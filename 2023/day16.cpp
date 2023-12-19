@@ -7,6 +7,11 @@
 #include <set>
 #include <string_view>
 #include <stack>
+#include <boost/container/small_vector.hpp>
+#include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -19,7 +24,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 ..../.\\..
 .-.-/..|..
 .|....-|.\
-..//.|....)", 46, {}}
+..//.|....)", 46, 51}
 };
 
 auto count_energised(auto bounds, const auto& grid, point_t start, direction_t start_dir) {
@@ -30,7 +35,8 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
             col >= 0 && col < max_cols;
         };
 
-    const auto lase = [&](point_t p, direction_t direction) -> std::vector<direction_t> {
+    using boost::container::small_vector;
+    const auto lase = [&](point_t p, direction_t direction) -> small_vector<direction_t, 2> {
         switch (grid.at(p)) {
         case '\\':
         if (direction == north) return { west  };
@@ -58,15 +64,13 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
 
     auto stack = std::stack<std::tuple<point_t, direction_t>>{};
     stack.push({ start, start_dir });
-    auto energised = std::unordered_set<point_t, boost::hash<point_t>>{};
-    auto handled = std::unordered_set<std::tuple<point_t, direction_t>, boost::hash<std::tuple<point_t, direction_t>>>{};
+    auto handled = boost::unordered_flat_set<std::tuple<point_t, direction_t>>{};
 
     while (!stack.empty()) {
         const auto [point, direction] = stack.top();
         stack.pop();
         if (!handled.insert({ point,direction }).second)
             continue;
-        energised.insert(point);
 
         for (auto exit : lase(point, direction)) {
             const auto target = add(point, exit);
@@ -75,7 +79,9 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
         }
     }
 
-    return energised.size();
+    return (handled
+        | rv::transform([](auto x) { return std::get<0>(x);})
+        | ranges::to<boost::unordered_set>).size();
 }
 
 auto run_a(std::string_view s) {
@@ -85,7 +91,7 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    const auto [bounds, grid] = parse_grid(s);
+    const auto [bounds, grid] = parse_grid<boost::unordered_flat_map>(s);
     const auto [rows, cols] = bounds;
     const auto top    = rv::iota(0, cols) | rv::transform([&](auto col) { return count_energised(bounds, grid, { 0, col        }, south); }) | ranges::to<std::set>;
     const auto bottom = rv::iota(0, cols) | rv::transform([&](auto col) { return count_energised(bounds, grid, { rows - 1, col }, north); }) | ranges::to<std::set>;
