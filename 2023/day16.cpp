@@ -29,11 +29,6 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 ..//.|....)", 46, 51}
 };
 
-inline auto parse_grid_to_array(std::string_view s) {
-    const auto lines = get_lines(s);
-    return std::tuple{ bounds_t { lines.size(), lines.front().size() }, lines };
-}
-
 auto count_energised(auto bounds, const auto& grid, point_t start, direction_t start_dir) {
     const auto [max_rows, max_cols] = bounds;
     const auto in_bounds = [=](point_t p) {
@@ -73,14 +68,6 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
     auto stack = std::stack<std::tuple<point_t, direction_t>>{};
     stack.push({ start, start_dir });
     auto handled = boost::multi_array<bool, 3>{boost::extents[max_rows][max_cols][4]};
-
-    const auto direction_to_index = [](direction_t direction) {
-        if (direction == north) return 0;
-        if (direction == south) return 1;
-        if (direction == west) return 2;
-        if (direction == east) return 3;
-        std::unreachable();
-    };
 
     while (!stack.empty()) {
         const auto [point, direction] = stack.top();
