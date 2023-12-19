@@ -27,6 +27,11 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 ..//.|....)", 46, 51}
 };
 
+inline auto parse_grid_to_array(std::string_view s) {
+    const auto lines = get_lines(s);
+    return std::tuple{ bounds_t { lines.size(), lines.front().size() }, lines };
+}
+
 auto count_energised(auto bounds, const auto& grid, point_t start, direction_t start_dir) {
     const auto in_bounds = [=](point_t p) {
         const auto [max_rows, max_cols] = bounds;
@@ -37,7 +42,8 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
 
     using boost::container::small_vector;
     const auto lase = [&](point_t p, direction_t direction) -> small_vector<direction_t, 2> {
-        switch (grid.at(p)) {
+        const auto [row,col] = p;
+        switch (grid[row][col]) {
         case '\\':
         if (direction == north) return { west  };
         if (direction == east)  return { south };
@@ -85,13 +91,13 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
 }
 
 auto run_a(std::string_view s) {
-    const auto [bounds, grid] = parse_grid(s);
+    const auto [bounds, grid] = parse_grid_to_array(s);
 
     return count_energised(bounds, grid, { 0,0 }, east);
 }
 
 auto run_b(std::string_view s) {
-    const auto [bounds, grid] = parse_grid<boost::unordered_flat_map>(s);
+    const auto [bounds, grid] = parse_grid_to_array(s);
     const auto [rows, cols] = bounds;
     const auto top    = rv::iota(0, cols) | rv::transform([&](auto col) { return count_energised(bounds, grid, { 0, col        }, south); }) | ranges::to<std::set>;
     const auto bottom = rv::iota(0, cols) | rv::transform([&](auto col) { return count_energised(bounds, grid, { rows - 1, col }, north); }) | ranges::to<std::set>;
