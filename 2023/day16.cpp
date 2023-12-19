@@ -13,6 +13,8 @@
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
 
+#include <boost/multi_array.hpp>
+
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
 {R"(.|...\....
@@ -33,8 +35,8 @@ inline auto parse_grid_to_array(std::string_view s) {
 }
 
 auto count_energised(auto bounds, const auto& grid, point_t start, direction_t start_dir) {
+    const auto [max_rows, max_cols] = bounds;
     const auto in_bounds = [=](point_t p) {
-        const auto [max_rows, max_cols] = bounds;
         const auto [row, col] = p;
         return row >= 0 && row < max_rows &&
             col >= 0 && col < max_cols;
@@ -70,13 +72,26 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
 
     auto stack = std::stack<std::tuple<point_t, direction_t>>{};
     stack.push({ start, start_dir });
-    auto handled = boost::unordered_flat_set<std::tuple<point_t, direction_t>>{};
+    auto handled = boost::multi_array<bool, 3>{boost::extents[max_rows][max_cols][4]};
+
+    const auto direction_to_index = [](direction_t direction) {
+        if (direction == north) return 0;
+        if (direction == south) return 1;
+        if (direction == west) return 2;
+        if (direction == east) return 3;
+        std::unreachable();
+    };
 
     while (!stack.empty()) {
         const auto [point, direction] = stack.top();
         stack.pop();
-        if (!handled.insert({ point,direction }).second)
+        const auto [row,col] = point;
+
+        auto& already_done = handled[row][col][direction_to_index(direction)];
+        if (already_done)
             continue;
+
+        already_done = true;
 
         for (auto exit : lase(point, direction)) {
             const auto target = add(point, exit);
@@ -85,9 +100,18 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
         }
     }
 
-    return (handled
-        | rv::transform([](auto x) { return std::get<0>(x);})
-        | ranges::to<boost::unordered_set>).size();
+    auto count = 0;
+    for (auto row : rv::iota(0, max_rows)) {
+        for (auto col : rv::iota(0, max_cols)) {
+            for (auto direction : rv::iota(0, 4)) {
+                if (handled[row][col][direction]) {
+                    ++count;
+                    break;
+                }
+            }
+        }
+    }
+    return count;
 }
 
 auto run_a(std::string_view s) {
