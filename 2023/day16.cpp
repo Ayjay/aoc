@@ -100,18 +100,13 @@ auto count_energised(auto bounds, const auto& grid, point_t start, direction_t s
         }
     }
 
-    auto count = 0;
-    for (auto row : rv::iota(0, max_rows)) {
-        for (auto col : rv::iota(0, max_cols)) {
-            for (auto direction : rv::iota(0, 4)) {
-                if (handled[row][col][direction]) {
-                    ++count;
-                    break;
-                }
-            }
+    return ranges::count_if(
+        rv::cartesian_product(rv::iota(0, max_rows), rv::iota(0, max_cols)),
+        [&](auto p) { 
+            const auto [row,col] = p;
+            return ranges::any_of(handled[row][col], std::identity{});
         }
-    }
-    return count;
+    );
 }
 
 auto run_a(std::string_view s) {
