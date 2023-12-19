@@ -8,6 +8,7 @@
 #include <stack>
 
 #include <boost/multi_array.hpp>
+#include <fmt/ranges.h>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -80,8 +81,9 @@ auto get_min_loss(const auto& grid) {
             continue;
 
         cached = weight;
-        if (row == max_rows-1 && col == max_cols-1)
-        continue;
+        if (row == max_rows - 1 && col == max_cols - 1) {
+            continue;
+        }
 
         for (const auto direction : directions) {
             if (direction == opposite(state.facing))
@@ -104,6 +106,19 @@ auto get_min_loss(const auto& grid) {
                 add_state({new_p, direction, 0, weight});
             }
         }
+    }
+
+    for (const auto row : rv::iota(0, max_rows)) {
+        auto mins = std::vector<long long>{};
+        for (const auto col : rv::iota(0, max_cols)) {
+            mins.push_back(9999999);
+            for (const auto direction : rv::iota(0u, directions.size())) {
+                for (auto i : cache[row][col][direction])
+                    if (i != 0)
+                        mins.back() = std::min(i, mins.back());
+            }
+        }
+        fmt::println("{}", mins);
     }
 
     // auto first_cells = cache | rv::filter([&](const auto& kv) { 
