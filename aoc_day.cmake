@@ -14,8 +14,13 @@ function(aoc_day YEAR DAY)
             set(INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/input${DAY}.txt")
             set(HAS_INPUT false)
             if(EXISTS ${INPUT_FILE})
-                set(HAS_INPUT true)
-            else()
+                file(SIZE ${INPUT_FILE} INPUT_FILE_SIZE)
+                if(${INPUT_FILE_SIZE} GREATER 0)
+                    set(HAS_INPUT true)
+                endif()
+            endif()
+
+            if(NOT ${HAS_INPUT})
                 file(DOWNLOAD 
                     "https://adventofcode.com/${YEAR}/day/${DAY}/input"
                     "${CMAKE_CURRENT_BINARY_DIR}/input${DAY}.txt"
@@ -33,6 +38,7 @@ function(aoc_day YEAR DAY)
                     message(WARNING "Error occurred during download: ${ERROR_MESSAGE}")
                 endif()
             endif()
+
             if(${HAS_INPUT})
                 set(APP_NAME aoc${YEAR}_${FORMATTED_DAY})
                 add_executable(${APP_NAME} day${DAY}.cpp)
