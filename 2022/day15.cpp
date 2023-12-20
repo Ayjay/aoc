@@ -8,6 +8,7 @@
 #include <deque>
 #include <unordered_set>
 #include <map>
+#include <utility>
 
 #include <fmt/std.h>
 #include <fmt/ostream.h>
@@ -103,7 +104,7 @@ auto run_b(std::string_view s, int area_size) {
         }
     }
 
-    assert(false);
+    std::unreachable();
 }
 
 int main() {
