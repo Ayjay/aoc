@@ -41,6 +41,10 @@ inline point_t add(point_t x, point_t y) {
     return {std::get<0>(x) + std::get<0>(y), std::get<1>(x) + std::get<1>(y)};
 }
 
+inline point_t sub(point_t x, point_t y) {
+    return {std::get<0>(x) - std::get<0>(y), std::get<1>(x) - std::get<1>(y)};
+}
+
 template <template<class...> class Map = std::unordered_map>
 inline auto parse_grid(std::string_view s) {
     auto grid = Map<point_t, char, boost::hash<point_t>>{};

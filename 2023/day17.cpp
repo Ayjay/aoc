@@ -9,14 +9,15 @@
 
 #include <boost/multi_array.hpp>
 #include <fmt/ranges.h>
+#include <fmt/ostream.h>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
-{R"(11111
-55551
-55551
-55551
-55552)", 13, {}},
+// {R"(11111
+// 55551
+// 55551
+// 55551
+// 55552)", 13, {}},
 {R"(2413432311323
 3215453535623
 3255245654254
@@ -43,6 +44,11 @@ struct state_t {
     }
 };
 
+std::ostream& operator<<(std::ostream& os, state_t state) {
+    return os << fmt::format("{} {} {} {}", state.point, state.accumulated_weight, state.facing, state.straight_line_distance);
+}
+template <> struct fmt::formatter<state_t> : ostream_formatter {};
+
 bool operator==(const state_t& left, const state_t& right) {
     return left.tie() == right.tie();
 }
@@ -63,10 +69,10 @@ auto get_min_loss(const auto& grid) {
 
     using move_t = std::tuple<state_t,state_t>;
     auto s = std::stack<move_t>{};
-    s.push({state_t{point_t{0,0}, south, 0, 0}, state_t{point_t{1,0}, south, 1, 0}});
-    s.push({state_t{point_t{0,0}, east, 0, 0}, state_t{point_t{0,1}, east, 1, 0}});
+    s.push({state_t{point_t{0,0}, south, 0, 0}, state_t{point_t{1,0}, south, 0, 0}});
+    s.push({state_t{point_t{0,0}, east, 0, 0}, state_t{point_t{0,1}, east, 0, 0}});
 
-    auto cache = boost::multi_array<std::optional<move_t>{boost::extents[max_rows][max_cols][directions.size()][max_straight_line]};
+    auto cache = boost::multi_array<std::optional<move_t>, 4>{boost::extents[max_rows][max_cols][directions.size()][max_straight_line]};
     const auto get_cached_value = [&](state_t state) -> decltype(auto) {
         const auto [row,col] = state.point;
         return cache[row][col][direction_to_index(state.facing)][state.straight_line_distance];
@@ -77,16 +83,24 @@ auto get_min_loss(const auto& grid) {
         s.pop();
 
         const auto [to_row,to_col] = to.point;
+        const auto [from_row, from_col] = from.point;
+
+        if (to_row == 0 && to_col == 5 && to.facing == north &&
+            from_row == 1 && from_col == 5 && from.accumulated_weight == 15) {
+            int x = 0;
+        }
 
         const auto weight = to.accumulated_weight + (grid[to_row][to_col] - '0');
-        auto& cached = get_cached_value(state);
+        auto& cached = get_cached_value(to);
         if (cached) {
             const auto& [cached_from, cached_to] = *cached;
-            if (cached_to.accumulated_weight < weight)
+            if (cached_to.accumulated_weight < to.accumulated_weight)
                 continue;
         }
 
+        auto to_insert = to;
         cached = move_t{from,to};
+        const auto [row, col] = to.point;
         if (row == max_rows - 1 && col == max_cols - 1) {
             continue;
         }
@@ -103,9 +117,9 @@ auto get_min_loss(const auto& grid) {
                 s.push({to,state});
             };
 
-            if (direction == state.facing) {
-                if (state.straight_line_distance < 2)
-                    add_state({new_p, direction, state.straight_line_distance + 1, weight});
+            if (direction == to.facing) {
+                if (to.straight_line_distance < max_straight_line-1)
+                    add_state({new_p, direction, to.straight_line_distance + 1, weight});
             } else {
                 add_state({new_p, direction, 0, weight});
             }
@@ -133,17 +147,74 @@ auto get_min_loss(const auto& grid) {
     //     const auto [row,col] = state.point;
     //     return row == max_rows-1 && col == max_rows-1;
     // });
-    auto min = std::optional<long long>{};
+    auto min = std::optional<move_t>{};
     for (const auto direction : rv::iota(0u, directions.size())) {
         for (auto cached : cache[max_rows-1][max_cols-1][direction]) {
             if (cached) {
                 const auto [from,to] = *cached;
-                if (!min || to.accumulated_weight < *min)
-                    min = to.accumulated_weight;
+                if (!min || to.accumulated_weight < std::get<1>(*min).accumulated_weight)
+                    min = *cached;
             }
         }
     }
-    return *min;
+    // auto step = *min;
+    // for (; std::get<0>(step).point != point_t{ 0,0 }; step = *get_cached_value(std::get<0>(step))) {
+    //     const auto [from, to] = step;
+    //     const auto [row, col] = to.point;
+    //     fmt::println("{}", to);
+    // }
+    // fmt::println("{}", std::get<1>(step));
+    // fmt::println("{}", std::get<0>(step));
+
+    // const auto test_path = std::vector<point_t>{
+    //     {0,0},
+    //     {0,1},
+    //     {0,2},
+    //     {1,2},
+    //     {1,3},
+    //     {1,4},
+    //     {1,5},
+    //     {0,5},
+    //     {0,6},
+    //     {0,7},
+    //     {0,8},
+    //     {1,8},
+    //     {2,8},
+    //     {2,9},
+    //     {2,10},
+    //     {3,10},
+    //     {4,10},
+    //     {4,11},
+    //     {5,11},
+    //     {6,11},
+    //     {7,11},
+    //     {7,12},
+    //     {8,12},
+    //     {9,12},
+    //     {10,12},
+    //     {10,11},
+    //     {11,11},
+    //     {12,11},
+    //     {12,12}
+    // };
+
+    // fmt::println("Test path");
+    // auto previous_direction = north;
+    // auto straight = 0;
+    // for (auto p : test_path | rv::sliding(2)) {
+    //     const auto from = p[0];
+    //     const auto to = p[1];
+    //     const auto direction = sub(to, from);
+    //     if (direction == previous_direction)
+    //         ++straight;
+    //     else
+    //         straight = 0;
+    //     previous_direction = direction;
+    //     const auto [from_cached,to_cached] = *get_cached_value({ to, direction, straight, 0 });
+    //     fmt::println("{}", to_cached);
+    // }
+
+    return std::get<1>(*min).accumulated_weight + (grid[max_rows-1][max_cols-1] - '0');
 }
 
 auto run_a(std::string_view s) {
