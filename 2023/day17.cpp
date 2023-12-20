@@ -68,7 +68,7 @@ auto get_min_loss(const auto& grid) {
     const auto max_straight_line = 3;
 
     using move_t = std::tuple<state_t,state_t>;
-    auto s = std::stack<move_t>{};
+    auto s = std::stack<move_t, std::vector<move_t>>{};
     s.push({state_t{point_t{0,0}, south, 0, 0}, state_t{point_t{1,0}, south, 0, 0}});
     s.push({state_t{point_t{0,0}, east, 0, 0}, state_t{point_t{0,1}, east, 0, 0}});
 
@@ -78,6 +78,7 @@ auto get_min_loss(const auto& grid) {
         return cache[row][col][direction_to_index(state.facing)][state.straight_line_distance];
     };
 
+    auto best = std::numeric_limits<long long>::max();
     while (!s.empty()) {
         const auto [from,to] = s.top();
         s.pop();
@@ -91,6 +92,10 @@ auto get_min_loss(const auto& grid) {
         }
 
         const auto weight = to.accumulated_weight + (grid[to_row][to_col] - '0');
+        //const auto best_possible = weight + (max_rows - to_row) + (max_cols - to_col);
+        //if (best_possible > best)
+        //    continue;
+
         auto& cached = get_cached_value(to);
         if (cached) {
             const auto& [cached_from, cached_to] = *cached;
@@ -98,10 +103,9 @@ auto get_min_loss(const auto& grid) {
                 continue;
         }
 
-        auto to_insert = to;
         cached = move_t{from,to};
-        const auto [row, col] = to.point;
-        if (row == max_rows - 1 && col == max_cols - 1) {
+        if (to_row == max_rows - 1 && to_col == max_cols - 1) {
+            best = std::min(best, to.accumulated_weight);
             continue;
         }
 
@@ -157,62 +161,69 @@ auto get_min_loss(const auto& grid) {
             }
         }
     }
-    // auto step = *min;
-    // for (; std::get<0>(step).point != point_t{ 0,0 }; step = *get_cached_value(std::get<0>(step))) {
-    //     const auto [from, to] = step;
-    //     const auto [row, col] = to.point;
-    //     fmt::println("{}", to);
-    // }
-    // fmt::println("{}", std::get<1>(step));
-    // fmt::println("{}", std::get<0>(step));
+    const auto show_best_path = [&] {
+        auto step = *min;
+        for (; std::get<0>(step).point != point_t{ 0,0 }; step = *get_cached_value(std::get<0>(step))) {
+            const auto [from, to] = step;
+            const auto [row, col] = to.point;
+            fmt::println("{}", to);
+        }
+        fmt::println("{}", std::get<1>(step));
+        fmt::println("{}", std::get<0>(step));
+    };
 
-    // const auto test_path = std::vector<point_t>{
-    //     {0,0},
-    //     {0,1},
-    //     {0,2},
-    //     {1,2},
-    //     {1,3},
-    //     {1,4},
-    //     {1,5},
-    //     {0,5},
-    //     {0,6},
-    //     {0,7},
-    //     {0,8},
-    //     {1,8},
-    //     {2,8},
-    //     {2,9},
-    //     {2,10},
-    //     {3,10},
-    //     {4,10},
-    //     {4,11},
-    //     {5,11},
-    //     {6,11},
-    //     {7,11},
-    //     {7,12},
-    //     {8,12},
-    //     {9,12},
-    //     {10,12},
-    //     {10,11},
-    //     {11,11},
-    //     {12,11},
-    //     {12,12}
-    // };
+    const auto show_test_path = [&] {
+        const auto test_path = std::vector<point_t>{
+            {0,0},
+            {0,1},
+            {0,2},
+            {1,2},
+            {1,3},
+            {1,4},
+            {1,5},
+            {0,5},
+            {0,6},
+            {0,7},
+            {0,8},
+            {1,8},
+            {2,8},
+            {2,9},
+            {2,10},
+            {3,10},
+            {4,10},
+            {4,11},
+            {5,11},
+            {6,11},
+            {7,11},
+            {7,12},
+            {8,12},
+            {9,12},
+            {10,12},
+            {10,11},
+            {11,11},
+            {12,11},
+            {12,12}
+        };
 
-    // fmt::println("Test path");
-    // auto previous_direction = north;
-    // auto straight = 0;
-    // for (auto p : test_path | rv::sliding(2)) {
-    //     const auto from = p[0];
-    //     const auto to = p[1];
-    //     const auto direction = sub(to, from);
-    //     if (direction == previous_direction)
-    //         ++straight;
-    //     else
-    //         straight = 0;
-    //     previous_direction = direction;
-    //     const auto [from_cached,to_cached] = *get_cached_value({ to, direction, straight, 0 });
-    //     fmt::println("{}", to_cached);
-    // }
+        fmt::println("Test path");
+        auto previous_direction = north;
+        auto straight = 0;
+        for (auto p : test_path | rv::sliding(2)) {
+            const auto from = p[0];
+            const auto to = p[1];
+            const auto direction = sub(to, from);
+            if (direction == previous_direction)
+                ++straight;
+            else
+                straight = 0;
+            previous_direction = direction;
+            const auto [from_cached, to_cached] = *get_cached_value({ to, direction, straight, 0 });
+            fmt::println("{}", to_cached);
+        }
+    };
+
+    // show_best_path();
+    // show_test_path();
 
     return std::get<1>(*min).accumulated_weight + (grid[max_rows-1][max_cols-1] - '0');
 }
