@@ -1,4 +1,4 @@
-#define BOOST_SPIRIT_X3_DEBUG
+//#define BOOST_SPIRIT_X3_DEBUG
 #include "aoc.h"
 
 #include <vector>
@@ -143,9 +143,24 @@ auto parse(std::string_view s) {
     return std::tuple{workflows,parts};
 }
 
+
 auto run_a(std::string_view s) {
     const auto [workflows,parts] = parse(s);
-    return -1;
+    const auto accept = [&](part_t part) {
+        auto bin = std::string{"in"};
+        while (bin != "A" && bin != "R") {
+            for (const auto& rule : workflows.at(bin)) {
+                auto destination = rule(part);
+                if (destination) {
+                    bin = *destination;
+                    break;
+                }
+            }
+        }
+        return bin == "A";
+    };
+
+    return reduce(parts | rv::filter(accept) | rv::transform(reduce));
 }
 
 auto run_b(std::string_view s) {
