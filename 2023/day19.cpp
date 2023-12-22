@@ -5,6 +5,7 @@
 #include <tuple>
 #include <string_view>
 #include <unordered_map>
+#include <array>
 #include <fmt/ostream.h>
 #include <fmt/std.h>
 #include <boost/fusion/include/std_array.hpp>
@@ -27,7 +28,7 @@ hdj{m>838:A,pv}
 {x=1679,m=44,a=2067,s=496}
 {x=2036,m=264,a=79,s=2244}
 {x=2461,m=1339,a=466,s=291}
-{x=2127,m=1623,a=2188,s=1013})", 19114, {}}
+{x=2127,m=1623,a=2188,s=1013})", 19114, 167409079868000}
 };
 
 enum class category {
@@ -163,8 +164,59 @@ auto run_a(std::string_view s) {
     return reduce(parts | rv::filter(accept) | rv::transform(reduce));
 }
 
+struct half_open_range {
+    long long lo;
+    long long hi;
+};
+using possible_part = std::array<half_open_range, static_cast<size_t>(category::count)>;
+void get_possibles(const auto& workflows, possible_part part, auto rule_it, auto&& out_it) {
+    const auto& [op,dest] = *rule_it;
+    const auto add_part = [&](possible_part p) {
+        if (dest == "A") {
+            *out_it++ = p;
+        } else if (dest != "R") {
+            get_possibles(workflows, p, workflows.at(dest).begin(), out_it);
+        }
+    };
+    std::visit(overload(
+        [&](comparison_t comparison) {
+            const auto cat_index = static_cast<size_t>(comparison.cat);
+            if (comparison.greater) {
+                auto hi_part = part;
+                hi_part[cat_index].lo = comparison.value+1;
+                add_part(hi_part);
+
+                auto lo_part = part;
+                lo_part[cat_index].hi = comparison.value;
+                get_possibles(workflows, lo_part, rule_it+1, out_it);
+            } else {
+                auto hi_part = part;
+                hi_part[cat_index].lo = comparison.value;
+                get_possibles(workflows, hi_part, rule_it+1, out_it);
+
+                auto lo_part = part;
+                lo_part[cat_index].hi = comparison.value-1;
+                add_part(lo_part);
+            }
+        },
+        [&](always) {
+            add_part(part);
+        }), op);
+}
+
 auto run_b(std::string_view s) {
-    return -1;
+    const auto [workflows,_] = parse(s);
+    auto possibles = std::vector<possible_part>{};
+    get_possibles(workflows,
+        possible_part{half_open_range{1,4000},half_open_range{1,4000},half_open_range{1,4000},half_open_range{1,4000}},
+        workflows.at("in").begin(),
+        std::back_inserter(possibles));
+    
+    const auto get_combinations = [](possible_part part) {
+        const auto get_range = [](auto r) { return r.hi - r.lo + 1; };
+        return reduce(part | rv::transform(get_range), std::multiplies{});
+    };
+    return reduce(possibles | rv::transform(get_combinations));
 }
 
 int main() {
