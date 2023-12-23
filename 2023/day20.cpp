@@ -1,4 +1,4 @@
-#define BOOST_SPIRIT_X3_DEBUG
+//#define BOOST_SPIRIT_X3_DEBUG
 #include "aoc.h"
 
 #include <vector>
@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <functional>
 #include <variant>
+#include <queue>
 
 #include <fmt/ostream.h>
 #include <fmt/std.h>
@@ -30,7 +31,7 @@ using pulse_t = bool;
 constexpr pulse_t low = false, high = true;
 
 struct broadcaster {
-    pulse_t operator()(std::string_view from, pulse_t pulse) const {
+    std::optional<pulse_t> operator()(std::string_view from, pulse_t pulse) const {
         return pulse;
     }
 };
@@ -39,9 +40,11 @@ template <> struct fmt::formatter<broadcaster> : ostream_formatter {};
 
 struct flipflop {
     pulse_t state = low;
-    pulse_t operator()(std::string_view from, pulse_t pulse) {
-        if (pulse == low)
-            state = !state;
+    std::optional<pulse_t> operator()(std::string_view from, pulse_t pulse) {
+        if (pulse == high)
+            return {};
+
+        state = !state;
         return state;
     }
 };
@@ -50,9 +53,9 @@ template <> struct fmt::formatter<flipflop> : ostream_formatter {};
 
 struct conjunction {
     std::unordered_map<std::string_view, pulse_t> remembered;
-    pulse_t operator()(std::string_view from, pulse_t pulse) {
+    std::optional<pulse_t> operator()(std::string_view from, pulse_t pulse) {
         remembered[from] = pulse;
-        return ranges::all_of(remembered | rv::values, std::identity{});
+        return !ranges::all_of(remembered | rv::values, std::identity{});
     }
 };
 std::ostream& operator<<(std::ostream& os, conjunction) { return os << "conjunction"; }
@@ -95,18 +98,43 @@ auto parse(std::string_view s) {
         auto& [name, module] = named_module;
         auto& [op, destinations] = module;
         for (auto& dest_name : destinations) {
-            auto& [dest_op, _] = modules.at(dest_name);
-            if (auto c = std::get_if<conjunction>(&dest_op))
-                c->remembered[name] = low;
+            if (auto it = modules.find(dest_name); it != modules.end()) {
+                auto& [dest_op, _] = it->second;
+                if (auto c = std::get_if<conjunction>(&dest_op))
+                    c->remembered[name] = low;
+            }
         }
     }
 
     return modules;
 }
 
+
 auto run_a(std::string_view s) {
-    const auto modules = parse(s);
-    return -1;
+    auto modules = parse(s);
+    auto low_count = 0ll, high_count = 0ll;
+
+    for (auto _ : rv::iota(0, 1000)) {
+        auto q = std::queue<std::tuple<std::string, pulse_t, std::string>>{};
+        q.push({ "button", low, "broadcaster" });
+
+        while (!q.empty()) {
+            const auto [from, pulse, to] = std::move(q.front());
+            q.pop();
+
+            ++(pulse ? high_count : low_count);
+            if (auto it = modules.find(to); it != modules.end()) {
+                auto& [op, destinations] = it->second;
+                const auto next_pulse = std::visit([&](auto& o) { return o(from, pulse); }, op);
+                if (next_pulse) {
+                    for (auto& d : destinations) {
+                        q.push({ to, *next_pulse, d });
+                    }
+                }
+            }
+        }
+    }
+    return low_count * high_count;
 }
 
 auto run_b(std::string_view s) {
