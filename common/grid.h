@@ -5,6 +5,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <type_traits>
 
 #include <boost/container_hash/hash.hpp>
 
@@ -55,6 +56,24 @@ inline auto parse_grid(std::string_view s) {
         }
     }
     return std::tuple{ bounds_t { lines.size(), lines.front().size() }, grid };
+}
+
+template <class T>
+struct speak;
+
+inline auto enumerate_grid(const auto& grid) {
+    const auto make_row_enumerator = [](const auto& indexed_row) {
+        const auto& [r, row] = indexed_row;
+        const auto make_col_enumerator = [r](const auto& indexed_col) {
+            const auto& [c, v] = indexed_col;
+            return std::tuple{ point_t{r,c}, v };
+        };
+        return rv::transform(rv::enumerate(row), make_col_enumerator);
+    };
+    return rv::enumerate(grid)
+        | rv::transform(make_row_enumerator)
+        | rv::cache1
+        | rv::join;
 }
 
 inline auto get_bounds(const auto& grid) {
