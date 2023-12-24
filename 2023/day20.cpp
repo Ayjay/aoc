@@ -138,7 +138,31 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto modules = parse(s);
+
+    auto q = std::queue<std::tuple<std::string, pulse_t, std::string>>{};
+    for (auto presses : rv::ints(0ll)) {
+        q.push({ "button", low, "broadcaster" });
+
+        while (!q.empty()) {
+            const auto [from, pulse, to] = std::move(q.front());
+            if (pulse == low && to == "rx")
+                return presses;
+
+            q.pop();
+
+            if (auto it = modules.find(to); it != modules.end()) {
+                auto& [op, destinations] = it->second;
+                const auto next_pulse = std::visit([&](auto& o) { return o(from, pulse); }, op);
+                if (next_pulse) {
+                    for (auto& d : destinations) {
+                        q.push({ to, *next_pulse, d });
+                    }
+                }
+            }
+        }
+    }
+    std::unreachable();
 }
 
 int main() {
