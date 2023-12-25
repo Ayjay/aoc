@@ -4,9 +4,10 @@
 #include <vector>
 #include <tuple>
 #include <string_view>
-#include <boost/container_hash/hash.hpp>
 
+#include <boost/container_hash/hash.hpp>
 #include <boost/bimap.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/bimap/unordered_multiset_of.hpp>
 
 #include <fmt/std.h>
@@ -20,7 +21,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 0,0,4~0,2,4
 2,0,5~2,2,5
 0,1,6~2,1,6
-1,1,8~1,1,9)", 5, {}}
+1,1,8~1,1,9)", 5, 7}
 };
 
 using point_t = std::tuple<int, int, int>;
@@ -64,9 +65,7 @@ auto fall(brick_t brick) {
     --q_z;
     return brick;
 }
-
-auto run_a(std::string_view s) {
-    const auto bricks = parse(s);
+auto simulate(auto& bricks) {
     auto tiles = std::unordered_map<point_t, brick_t, boost::hash<point_t>>{};
     for (const auto brick : bricks) {
         for (auto tile : tile_view(brick)) {
@@ -77,12 +76,12 @@ auto run_a(std::string_view s) {
     auto supporting = boost::bimap<unordered_multiset_of<brick_t>, unordered_multiset_of<brick_t>>{};
 
     auto falling = bricks;
-    ranges::sort(falling, std::less{}, [](const brick_t& b) { 
+    ranges::sort(falling, std::less{}, [](const brick_t& b) {
         const auto& [p, q] = b;
         const auto [p_x, p_y, p_z] = p;
         const auto [q_x, q_y, q_z] = q;
-        return std::min(p_z,q_z);
-    });
+        return std::min(p_z, q_z);
+        });
     auto final_bricks = std::vector<brick_t>{};
 
     while (!falling.empty()) {
@@ -121,6 +120,12 @@ auto run_a(std::string_view s) {
     // for (auto [l, r] : supporting.left) {
     //     fmt::println("{} -> {}", l, r);
     // }
+    return std::tuple{ supporting,final_bricks };
+}
+
+auto run_a(std::string_view s) {
+    const auto bricks = parse(s);
+    const auto [supporting, final_bricks] = simulate(bricks);
 
     const auto only_one_support = [&](brick_t brick) {
         return supporting.right.count(brick) == 1;
@@ -133,8 +138,41 @@ auto run_a(std::string_view s) {
     return ranges::count_if(final_bricks, can_be_disintegrated);
 }
 
+
 auto run_b(std::string_view s) {
-    return -1;
+    const auto bricks = parse(s);
+    const auto [supporting, final_bricks] = simulate(bricks);
+
+    const auto only_one_support = [&](brick_t b) {
+        return supporting.right.count(b) == 1;
+    };
+
+    const auto would_fall = [&](brick_t brick) {
+        auto falling_range = boost::unordered_set{ brick };
+        auto ret = 0;
+        while (!falling_range.empty()) {
+
+            const auto all_falling = [&](brick_t b) {
+                const auto [begin, end] = supporting.right.equal_range(b);
+                return std::all_of(begin, end, [&](auto kv) { return falling_range.contains(kv.second); });
+            };
+
+            const auto next_fall = falling_range
+                | rv::for_each([&](brick_t b) {
+                    const auto [begin, end] = supporting.left.equal_range(b);
+                    return ranges::subrange{ begin,end };
+                })
+                | rv::transform([](auto kv) { return kv.second; })
+                | rv::filter(all_falling)
+                | ranges::to<boost::unordered_set>;
+
+            ret += next_fall.size();
+            falling_range = std::move(next_fall);
+        }
+        return ret;
+    };
+
+    return reduce(final_bricks | rv::transform(would_fall));
 }
 
 int main() {
