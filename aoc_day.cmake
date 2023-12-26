@@ -50,6 +50,17 @@ function(aoc_day YEAR DAY)
                         range-v3
                         ${Boost_LIBRARIES}
                 )
+
+                if(${USE_GUI} AND "${imgui_FOUND}")
+                    target_compile_definitions(${APP_NAME} PUBLIC USE_GUI=1)
+                    target_include_directories(${APP_NAME} PRIVATE ${OPENGL_INCLUDE_DIRS})
+                    target_link_libraries(${APP_NAME} PRIVATE
+                        ${OPENGL_LIBRARIES}
+                        imgui::imgui
+                        glfw
+                    )
+                endif()
+
                 target_include_directories(${APP_NAME}
                     PRIVATE
                         ${Boost_INCLUDE_DIRS}
