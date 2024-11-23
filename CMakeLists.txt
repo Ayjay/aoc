@@ -12,6 +12,10 @@ project(aoc)
 # endif()
 # set(CMAKE_TOOLCHAIN_FILE ${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
-set(SESSION_TOKEN "53616c7465645f5f2625ab79c5db5f5fc69e532e14ddd5f1b7990edd834aaed5434738e521351bc81a4c68258b72298b4043224c9dd50dc08b1c024bb2006c91")
+set(SESSION_TOKEN CACHE STRING "AoC session token")
+if(NOT SESSION_TOKEN)
+    message(FATAL_ERROR "Missing AOC session token")
+endif()
+
 add_subdirectory(2022)
 add_subdirectory(2023)
