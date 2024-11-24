@@ -24,7 +24,7 @@ function(aoc_day YEAR DAY)
                 file(DOWNLOAD 
                     "https://adventofcode.com/${YEAR}/day/${DAY}/input"
                     "${CMAKE_CURRENT_BINARY_DIR}/input${DAY}.txt"
-                    HTTPHEADER "Cookie: session=${SESSION_TOKEN}"
+                    HTTPHEADER "Cookie: session=${AOC_SESSION_TOKEN}"
                     STATUS DOWNLOAD_STATUS
                 )
                 # Separate the returned status code, and error message.

@@ -12,8 +12,8 @@ project(aoc)
 # endif()
 # set(CMAKE_TOOLCHAIN_FILE ${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
-set(SESSION_TOKEN CACHE STRING "AoC session token")
-if(NOT SESSION_TOKEN)
+set(AOC_SESSION_TOKEN $ENV{AOC_SESSION_TOKEN} CACHE STRING "AoC session token")
+if(NOT AOC_SESSION_TOKEN)
     message(FATAL_ERROR "Missing AOC session token")
 endif()
 

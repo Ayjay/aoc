@@ -1,44 +1,18 @@
-FROM ubuntu:23.10
-LABEL Description="Build environment"
+FROM mcr.microsoft.com/devcontainers/cpp:ubuntu-24.04
 
-#ENV HOME /root
+# Update and install GCC 14
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    gcc-14 g++-14 \
+    && apt-get clean
 
-#SHELL ["/bin/bash", "-c"]
+# Set GCC 14 as default (optional)
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
-# RUN apt-get update && apt-get -y --no-install-recommends install \
-#     build-essential \
-#     curl \
-#     ca-certificates \
-#     git
-# 
-# RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# RUN (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /root/.profile
-# RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; brew install gcc cmake
+# [Optional] Uncomment this section to install additional vcpkg ports.
+# RUN su vscode -c "${VCPKG_ROOT}/vcpkg install <your-port-name-here>"
 
-RUN apt-get -y update
-RUN apt-get -y install libterm-ui-perl
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install \
-    gcc \
-    g++ \
-    cmake \
-    git \
-    curl \
-    zip \
-    unzip \
-    tar \
-    pkg-config \
-    gdb \
-    libboost1.81-all-dev
-
-WORKDIR /usr/local
-RUN git clone --depth=1 https://github.com/Microsoft/vcpkg.git
-RUN ./vcpkg/bootstrap-vcpkg.sh
-
-ENV CMAKE_TOOLCHAIN_FILE /usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake
-ENV CXX /usr/bin/g++
-ENV CC /usr/bin/gcc
-
-#VOLUME /src
-#WORKDIR /src
-
-# CMD ["tail", "-f", "/dev/null"]
+# [Optional] Uncomment this section to install additional packages.
+# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+#     && apt-get -y install --no-install-recommends <your-package-list-here>
