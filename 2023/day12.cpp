@@ -4,6 +4,7 @@
 #include <vector>
 #include <tuple>
 #include <string_view>
+#include <fmt/format.h>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -15,23 +16,50 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 ?###???????? 3,2,1)", 21, {}}
 };
 
-auto get_combinations_impl(std::string_view spring, auto report) {
-    if (report.size() == 1) {
-        const auto group_size = report.front();
-        const auto can_be_spring = [](char c) { return c == '?' || c == '#'; };
-        const auto it = ranges::find(spring, '#');
+const auto can_be_spring = [](char c) { return c == '.'; };
+const auto can_be_broken = [](char c) { return c == '#'; };
+
+bool match_group(std::string_view spring, const auto& report) {
+    auto gaps_required = report.size() - 1;
+    if (spring.size() < reduce(report) + gaps_required)
+        return false;
+
+    auto it = spring.begin();
+    for (const auto broken_count : report) {
+        it = std::find_if(it, spring.end(), can_be_broken);
+        auto remaining_elements = std::distance(it, spring.end());
+        if (remaining_elements < broken_count)
+            return false;
+        const auto potential_broken_group = std::ranges::subrange(it, it + broken_count);
+        if (!ranges::all_of(potential_broken_group, can_be_broken))
+            return false;
+        it = potential_broken_group.end();
         if (it != spring.end()) {
-            // have at least 1 confirmed spot, must place there
-            const auto is_not_confirmed = [](char c) { return c != '#';};
-            const auto confirmed_count = std::find_if(it, spring.end(), is_not_confirmed) - it;
-            const auto to_place = confirmed_count - group_size;
-            if (to_place == 0)
-                return 1;
-            const auto reversed_start = std::reverse_iterator{it};
-            const auto possible_start = std::find(reversed_start, std::min(reversed_start+to_place, spring.rend()), '.');
+            if (!can_be_spring(*it))
+                return false;
+            else
+                ++it;
         }
     }
-    return 0;
+    return std::find_if(it, spring.end(), can_be_broken) == spring.end();
+}
+
+std::vector<std::string> resolve_questions(std::string_view spring) {
+    std::vector<std::string> input;
+    auto question = ranges::find(spring, '?');
+    if (question == spring.end()) {
+        input.push_back(std::string{ spring });
+    } else {
+        for (auto suffix : resolve_questions({ question + 1, spring.end() })) {
+            input.push_back(fmt::format("{}.{}", std::string(spring.begin(), question), suffix));
+            input.push_back(fmt::format("{}#{}", std::string(spring.begin(), question), suffix));
+        }
+    }
+    return input;
+}
+
+auto get_combinations_impl(std::string spring, const auto& report) {
+    return ranges::count_if(resolve_questions(spring), [&](auto&& s) { return match_group(s, report); });
 }
 
 const auto get_combinations = [](std::string_view spring_text) {
@@ -61,6 +89,9 @@ auto run_b(std::string_view s) {
 
 int main() {
     auto test_springs = std::vector{ std::tuple
+        { "? 1", 1 },
+        { "?? 1", 2 },
+        { "??? 1", 3 },
         { "???.### 1,1,3", 1 },
         { ".??..??...?##. 1,1,3", 4 },
         { "?#?#?#?#?#?#?#? 1,3,1,6", 1 },
