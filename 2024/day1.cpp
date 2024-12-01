@@ -5,11 +5,11 @@
 #include <tuple>
 #include <string_view>
 #include <utility>
-//#define BOOST_TEST_MODULE lib_test
-#include <boost/test/unit_test.hpp>
 
 #include <boost/hana/tuple.hpp>
 #include <boost/unordered_map.hpp>
+
+#include <catch2/catch_test_macros.hpp>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -55,21 +55,17 @@ auto run_b(std::string_view s) {
     return reduce(left | rv::transform(similarity_score));
 }
 
-BOOST_AUTO_TEST_SUITE( day1 )
-
-BOOST_AUTO_TEST_CASE(a)
+TEST_CASE("day1a", "[day1]")
 {
     const auto [s,expected,_] = test_data[0];
-    BOOST_TEST(run_a(s) == *expected);
+    REQUIRE(run_a(s) == *expected);
 }
 
-BOOST_AUTO_TEST_CASE(b)
+TEST_CASE("day1b", "[day1]")
 {
     const auto [s,_,expected] = test_data[0];
-    BOOST_TEST(run_b(s) == *expected);
+    REQUIRE(run_b(s) == *expected);
 }
-
-BOOST_AUTO_TEST_SUITE_END()
 
 void entry() {
     run(run_a, run_b, test_data, get_input(AOC_DAY));

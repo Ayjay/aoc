@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 find_package(fmt REQUIRED)
 find_package(range-v3 REQUIRED)
 find_package(Boost 1.87 CONFIG REQUIRED ALL)
+find_package(Catch2 3 CONFIG REQUIRED)
 
 if(${USE_GUI})
     find_package(imgui REQUIRED)
@@ -17,8 +18,9 @@ endif()
 
 include(${PROJECT_SOURCE_DIR}/aoc_day.cmake)
 
-add_executable(test_2024 test.cpp)
-add_test(NAME Test2024 COMMAND test_2024)
+add_executable(test_2024)
+target_link_libraries(test_2024 PRIVATE Catch2::Catch2WithMain)
+
 function(aoc24_day year day)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/day${day}.cpp")
         day_available(${year} ${day} is_available)
@@ -35,6 +37,7 @@ function(aoc24_day year day)
                         fmt::fmt
                         range-v3
                         ${Boost_LIBRARIES}
+                        Catch2::Catch2
                 )
                 if(MSVC)
                     target_compile_options(${lib_name} PRIVATE "/Zc:__cplusplus")
@@ -58,5 +61,6 @@ foreach(day RANGE 1 25)
     aoc24_day(2024 ${day})
 endforeach()
 
-target_link_libraries(test_2024 PRIVATE Boost::unit_test_framework)
-
+include(CTest)
+include(Catch)
+catch_discover_tests(test_2024)
