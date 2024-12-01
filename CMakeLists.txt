@@ -17,6 +17,6 @@ if(NOT AOC_SESSION_TOKEN)
     message(FATAL_ERROR "Missing AOC session token")
 endif()
 
-add_subdirectory(2022)
-add_subdirectory(2023)
+#add_subdirectory(2022)
+#add_subdirectory(2023)
 add_subdirectory(2024)

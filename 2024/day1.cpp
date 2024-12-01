@@ -4,8 +4,8 @@
 #include <vector>
 #include <tuple>
 #include <string_view>
-#include <fmt/format.h>
-#include <generator>
+//#define BOOST_TEST_MODULE lib_test
+#include <boost/test/unit_test.hpp>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -25,6 +25,13 @@ auto run_b(std::string_view s) {
     return -1;
 }
 
-int main() {
+BOOST_AUTO_TEST_CASE(first_test)
+{
+  int i = 1;
+  BOOST_TEST(i);
+  BOOST_TEST(i == 2);
+}
+
+void entry() {
     run(run_a, run_b, test_data, get_input(AOC_DAY));
 }

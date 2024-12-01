@@ -28,6 +28,8 @@ namespace sv = std::views;
 #include <range/v3/range/conversion.hpp>
 namespace rv = ranges::views;
 
+#include <boost/optional.hpp>
+
 #include <boost/hana/core.hpp>
 #include <boost/hana/fold.hpp>
 #include <boost/hana/concept.hpp>
