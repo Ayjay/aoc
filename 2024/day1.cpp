@@ -55,11 +55,10 @@ auto run_b(std::string_view s) {
     return reduce(left | rv::transform(similarity_score));
 }
 
-BOOST_AUTO_TEST_CASE(first_test)
+BOOST_AUTO_TEST_CASE(a)
 {
-  int i = 1;
-  BOOST_TEST(i);
-  BOOST_TEST(i == 2);
+    const auto [s,expected,_] = test_data[0];
+    BOOST_TEST(run_a(s) == *expected);
 }
 
 void entry() {

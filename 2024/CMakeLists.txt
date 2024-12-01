@@ -18,6 +18,7 @@ endif()
 include(${PROJECT_SOURCE_DIR}/aoc_day.cmake)
 
 add_executable(test_2024 test.cpp)
+add_test(NAME Test2024 COMMAND test_2024)
 function(aoc24_day year day)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/day${day}.cpp")
         day_available(${year} ${day} is_available)
