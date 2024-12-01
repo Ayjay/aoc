@@ -4,10 +4,12 @@
 #include <vector>
 #include <tuple>
 #include <string_view>
+#include <utility>
 //#define BOOST_TEST_MODULE lib_test
 #include <boost/test/unit_test.hpp>
 
 #include <boost/hana/tuple.hpp>
+#include <boost/unordered_map.hpp>
 
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -16,7 +18,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 2   5
 1   3
 3   9
-3   3)", 11, {}}
+3   3)", 11, 31}
 };
 
 auto parse(std::string_view s) {
@@ -36,7 +38,21 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto result = bp::parse(s, *(bp::long_long > bp::long_long), bp::ws);
+
+    auto left = std::vector<result_type>{};
+    auto right = boost::unordered_map<result_type, result_type>{};
+    for (auto [l,r] : *result) {
+        left.push_back(l);
+        ++right[r];
+    }
+
+    const auto similarity_score = [&](auto i) {
+        auto it = right.find(i);
+        return i * (it == right.end() ? 0 : it->second);
+    };
+
+    return reduce(left | rv::transform(similarity_score));
 }
 
 BOOST_AUTO_TEST_CASE(first_test)

@@ -36,6 +36,8 @@ namespace rv = ranges::views;
 #include <boost/hana/ext/std.hpp>
 namespace hana = boost::hana;
 
+#include "hana_structured_bindings.hpp"
+
 #define BOOST_PARSER_USE_HANA_TUPLE
 #include <boost/parser/parser.hpp>
 namespace bp = boost::parser;
