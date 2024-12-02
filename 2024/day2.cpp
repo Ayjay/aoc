@@ -19,23 +19,24 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 9 7 6 2 1
 1 3 2 4 5
 8 6 4 4 1
-1 3 6 7 9)", 2, {}}
+1 3 6 7 9)", 2, 4}
 };
 
+const auto parser = *(+bp::long_long > -bp::eol);
 auto parse(std::string_view s) {
-    auto res = bp::parse(s, *(+bp::long_long > -bp::eol), bp::blank);
+    auto res = bp::parse(s, parser, bp::blank);
     return *res;
 }
 
 TEST_CASE("terminated string", "[day2]") {
     const auto str = std::string_view{"1 2 3 4 5\n6 7 8\n"};
-    auto res = bp::parse(str, +(+bp::long_long > -bp::eol), bp::blank, boost::parser::trace::on);
+    auto res = bp::parse(str, parser, bp::blank, boost::parser::trace::on);
     REQUIRE(res);
 }
 
 TEST_CASE("unterminated string", "[day2]") {
     const auto str = std::string_view{"1 2 3 4 5\n6 7 8"};
-    auto res = bp::parse(str, *(+bp::long_long > -bp::eol), bp::blank, boost::parser::trace::on);
+    auto res = bp::parse(str, parser, bp::blank, boost::parser::trace::on);
     REQUIRE(res);
 }
 
@@ -46,21 +47,86 @@ TEST_CASE("day2 parse", "[day2]") {
     REQUIRE(parsed.front().size() == 5);
 }
 
+const auto strict_safe = [](const std::vector<result_type>& report) -> bool {
+    if (report.size() <= 1) return true;
+    const auto safe_pair = [increasing = report[1] > report[0]](auto window) {
+        const auto gap = increasing ? window[1] - window[0] : window[0] - window[1];
+        return gap >= 1 && gap <= 3;
+    };
+    return ranges::all_of(report | rv::sliding(2), safe_pair);
+};
+
 static auto run_a(std::string_view s) {
     const auto reports = parse(s);
-    const auto safe = [](const std::vector<result_type>& report) -> bool {
-        if (report.size() <= 1) return true;
-        const auto safe_pair = [increasing = report[1] > report[0]](auto window) {
-            const auto gap = increasing ? window[1] - window[0] : window[0] - window[1];
-            return gap >= 1 && gap <= 3;
-        };
-        return ranges::all_of(report | rv::sliding(2), safe_pair);
-    };
-    return ranges::distance(reports | rv::filter(safe));
+    return ranges::distance(reports | rv::filter(strict_safe));
 }
 
+const auto tolerant_safe = [](std::vector<result_type> report) -> bool {
+    auto diffs = std::vector<result_type>{};
+    diffs.reserve(report.size()-1);
+    ranges::adjacent_difference(report, std::back_inserter(diffs));
+    diffs.erase(diffs.begin());
+    std::vector<std::vector<result_type>::iterator> increasing = {}, decreasing = {};
+    std::optional<std::vector<result_type>::iterator> aberration;
+    for (auto it = diffs.begin(); it != diffs.end(); ++it) {
+        if (*it >= 1 and *it <= 3)
+            increasing.push_back(it);
+        else if (*it <= -1 and *it >= -3)
+            decreasing.push_back(it);
+        else if (aberration)
+            return false;
+        else
+            aberration = it;
+    }
+
+    if (increasing.size() == diffs.size() or decreasing.size() == diffs.size()) {
+        return true;
+    }
+
+    if (increasing.size() == 1 and !aberration) {
+        aberration = increasing.front()+1;
+    } else if (decreasing.size() == 1 and !aberration) {
+        aberration = decreasing.front()+1;
+    } else if (!aberration) {
+        return false;
+    }
+
+    report.erase(report.begin() + (*aberration - diffs.begin()));
+    return strict_safe(report);
+};
+
+TEST_CASE("basic", "[day2]") {
+    REQUIRE(tolerant_safe({1,2,3,4}) == true);
+}
+
+TEST_CASE("basic fail", "[day2]") {
+    REQUIRE(tolerant_safe({1,5,10,15}) == false);
+}
+
+TEST_CASE("one interloper", "[day2]") {
+    REQUIRE(tolerant_safe({3,2,4,5}) == true);
+}
+
+TEST_CASE("increasing error at end", "[day2]") {
+    REQUIRE(tolerant_safe({2,3,4,3}) == true);
+}
+
+TEST_CASE("increasing error two from  end", "[day2]") {
+    REQUIRE(tolerant_safe({2,3,4,3,5}) == true);
+}
+
+TEST_CASE("decreasing error at end", "[day2]") {
+    REQUIRE(tolerant_safe({5,4,3,4}) == true);
+}
+
+TEST_CASE("decreasing error two from  end", "[day2]") {
+    REQUIRE(tolerant_safe({5,4,3,4,2}) == true);
+}
+
+
 static auto run_b(std::string_view s) {
-    return -1;
+    const auto reports = parse(s);
+    return ranges::distance(reports | rv::filter(tolerant_safe));
 }
 
 TEST_CASE("day2a", "[day2]")
@@ -73,6 +139,12 @@ TEST_CASE("day2a", "[day2]")
 
 TEST_CASE("day2b", "[day2]")
 {
+    REQUIRE(tolerant_safe({7,6,4,2,1}) == true);
+    REQUIRE(tolerant_safe({1,2,7,8,9}) == false);
+    REQUIRE(tolerant_safe({9,7,6,2,1}) == false);
+    REQUIRE(tolerant_safe({1,3,2,4,5}) == true);
+    REQUIRE(tolerant_safe({8,6,4,4,1}) == true);
+    REQUIRE(tolerant_safe({1,3,6,7,9}) == true);
     const auto [s,_,expected] = test_data[0];
     if (expected) {
         REQUIRE(run_b(s) == *expected);
