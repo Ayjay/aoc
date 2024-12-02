@@ -20,6 +20,14 @@ include(${PROJECT_SOURCE_DIR}/aoc_day.cmake)
 
 add_executable(test_2024)
 target_link_libraries(test_2024 PRIVATE Catch2::Catch2WithMain)
+if(MSVC)
+    # we use entry as the entry point for each day
+    # however, that causes multiply-defined symbols in the testing app since it links with them all
+    # so force linking
+    target_link_options(test_2024 PRIVATE /FORCE)
+endif()
+
+add_library(runner OBJECT main.cpp)
 
 function(aoc24_day year day)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/day${day}.cpp")
@@ -50,8 +58,8 @@ function(aoc24_day year day)
                 )
                 target_link_libraries(test_2024 PRIVATE ${lib_name})
                 set(app_name "aoc${year}_${padded_day}")
-                add_executable(${app_name} main.cpp)
-                target_link_libraries(${app_name} PRIVATE ${lib_name})
+                add_executable(${app_name})
+                target_link_libraries(${app_name} PRIVATE runner ${lib_name})
             endif()
         endif()
     endif()

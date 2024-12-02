@@ -142,3 +142,9 @@ struct overload : Ts ... {
     using Ts::operator() ...;
 };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
+
+#ifdef _MSC_VER
+#define WEAK
+#else
+#define WEAK __attribute__((weak))
+#endif
