@@ -62,37 +62,17 @@ static auto run_a(std::string_view s) {
 }
 
 const auto tolerant_safe = [](std::vector<result_type> report) -> bool {
-    auto diffs = std::vector<result_type>{};
-    diffs.reserve(report.size()-1);
-    ranges::adjacent_difference(report, std::back_inserter(diffs));
-    diffs.erase(diffs.begin());
-    std::vector<std::vector<result_type>::iterator> increasing = {}, decreasing = {};
-    std::optional<std::vector<result_type>::iterator> aberration;
-    for (auto it = diffs.begin(); it != diffs.end(); ++it) {
-        if (*it >= 1 and *it <= 3)
-            increasing.push_back(it);
-        else if (*it <= -1 and *it >= -3)
-            decreasing.push_back(it);
-        else if (aberration)
-            return false;
-        else
-            aberration = it;
-    }
-
-    if (increasing.size() == diffs.size() or decreasing.size() == diffs.size()) {
+    if (strict_safe(report))
         return true;
-    }
 
-    if (increasing.size() == 1 and !aberration) {
-        aberration = increasing.front()+1;
-    } else if (decreasing.size() == 1 and !aberration) {
-        aberration = decreasing.front()+1;
-    } else if (!aberration) {
-        return false;
+    for (auto it = report.begin(); it != report.end(); ++it) {
+        std::vector<result_type> copy;
+        copy.insert(copy.end(), report.begin(), it);
+        copy.insert(copy.end(), it+1, report.end());
+        if (strict_safe(copy))
+            return true;
     }
-
-    report.erase(report.begin() + (*aberration - diffs.begin()));
-    return strict_safe(report);
+    return false;
 };
 
 TEST_CASE("basic", "[day2]") {
