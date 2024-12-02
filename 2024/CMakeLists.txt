@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.25)
 
 find_package(fmt REQUIRED)
 find_package(range-v3 REQUIRED)
@@ -38,7 +38,8 @@ function(aoc24_day year day)
                 pad_day_string(${day} padded_day)
                 set(lib_name "libaoc${year}_${padded_day}")
                 add_library(${lib_name} OBJECT day${day}.cpp)
-                set_property(TARGET ${lib_name} PROPERTY CXX_STANDARD 23)
+                set_property(TARGET ${lib_name} PROPERTY CXX_STANDARD 26)
+                target_compile_options(${lib_name} PRIVATE -std=c++2c)
                 target_compile_definitions(${lib_name} PUBLIC AOC_DAY=${day})
                 target_link_libraries(${lib_name}
                     PRIVATE 

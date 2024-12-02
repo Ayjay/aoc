@@ -23,16 +23,40 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 };
 
 auto parse(std::string_view s) {
-    auto vals = *bp::parse(s, *(bp::long_long >> bp::long_long), bp::ws);
-    using namespace hana::literals;
-    return std::tuple{
-        vals | rv::transform([](auto a) { return a[0_c]; }) | ranges::to<std::vector>,
-        vals | rv::transform([](auto a) { return a[1_c]; }) | ranges::to<std::vector>
-    };
+    auto res = bp::parse(s, *(+bp::long_long > -bp::eol), bp::blank);
+    return *res;
+}
+
+TEST_CASE("terminated string", "[day2]") {
+    const auto str = std::string_view{"1 2 3 4 5\n6 7 8\n"};
+    auto res = bp::parse(str, +(+bp::long_long > -bp::eol), bp::blank, boost::parser::trace::on);
+    REQUIRE(res);
+}
+
+TEST_CASE("unterminated string", "[day2]") {
+    const auto str = std::string_view{"1 2 3 4 5\n6 7 8"};
+    auto res = bp::parse(str, *(+bp::long_long > -bp::eol), bp::blank, boost::parser::trace::on);
+    REQUIRE(res);
+}
+
+TEST_CASE("day2 parse", "[day2]") {
+    const auto [s,_,_] = test_data[0];
+    const auto parsed = parse(s);
+    REQUIRE(parsed.size() == 6);
+    REQUIRE(parsed.front().size() == 5);
 }
 
 static auto run_a(std::string_view s) {
-    return -1;
+    const auto reports = parse(s);
+    const auto safe = [](const std::vector<result_type>& report) -> bool {
+        if (report.size() <= 1) return true;
+        const auto safe_pair = [increasing = report[1] > report[0]](auto window) {
+            const auto gap = increasing ? window[1] - window[0] : window[0] - window[1];
+            return gap >= 1 && gap <= 3;
+        };
+        return ranges::all_of(report | rv::sliding(2), safe_pair);
+    };
+    return ranges::distance(reports | rv::filter(safe));
 }
 
 static auto run_b(std::string_view s) {
