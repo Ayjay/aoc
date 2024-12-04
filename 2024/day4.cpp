@@ -28,7 +28,7 @@ XXAMMXXAMA
 SMSMSASXSS
 SAXAMASAAA
 MAMMMXMMMM
-MXMXAXMASX)", 18, {}}
+MXMXAXMASX)", 18, 9}
 };
 
 struct point {
@@ -86,7 +86,34 @@ auto run_a(std::string_view s) {
 }
 
 static auto run_b(std::string_view s) {
-    return -1;
+    const auto lines = get_lines(s);
+    const auto rows = lines.size();
+    const auto cols = lines.front().size();
+    const auto matches_xmas = [&](point p) {
+        auto [row,col] = p;
+        auto top_left = lines[row-1][col-1];
+        auto top_right = lines[row-1][col+1];
+        auto bottom_right = lines[row+1][col+1];
+        auto bottom_left = lines[row+1][col-1];
+        auto all = std::array{top_left,top_right,bottom_right,bottom_left};
+        if (ranges::any_of(all, [](char c) { return c != 'M' and c != 'S'; }))
+            return false;
+        return 
+            ((top_left == 'M' and bottom_right == 'S') or
+            (top_left == 'S' and bottom_right == 'M')) and
+            ((top_right == 'M' and bottom_left == 'S') or
+            (top_right == 'S' and bottom_left == 'M'));
+
+    };
+    auto count = result_type{};
+    for (auto row = 1; row < rows-1; ++row) {
+        for (auto col = 1; col < cols-1; ++col) {
+            if (lines[row][col] == 'A') {
+                if (matches_xmas({row,col})) ++count;
+            }
+        }
+    }
+    return count;
 }
 
 TEST_CASE("day4a", "[day4]") {
