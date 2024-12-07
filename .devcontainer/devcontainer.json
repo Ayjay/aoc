@@ -19,7 +19,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
+	"postCreateCommand": "echo -e 'set auto-load local-gdbinit on\nset auto-load safe-path /' > /home/vscode/.gdbinit",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
@@ -28,6 +28,38 @@
 			"settings": {
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
+				},
+				"testMate.cpp.debug.configTemplate": {
+					"type": "cppvsdbg",
+					"linux": {
+						"type": "cppdbg",
+						"MIMode": "gdb"
+					},
+					"darwin": {
+						"type": "cppdbg",
+						"MIMode": "lldb"
+					},
+					"win32": {
+						"type": "cppvsdbg"
+					},
+					"program": "${exec}",
+					"args": "${argsArray}",
+					"cwd": "${cwd}",
+					"env": "${envObj}",
+					"environment": "${envObjArray}",
+					"sourceFileMap": "${sourceFileMapObj}",
+					"setupCommands": [
+						{
+							"description": "Enable pretty-printing for gdb",
+							"text": "-enable-pretty-printing",
+							"ignoreFailures": true
+						},
+						{
+							"description": "Set Disassembly Flavor to Intel",
+							"text": "-gdb-set disassembly-flavor intel",
+							"ignoreFailures": true
+						}
+					]
 				}
 			}
 		}
