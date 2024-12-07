@@ -44,6 +44,7 @@ namespace bp = boost::parser;
 
 struct reduce_t {
     auto operator()(auto&& r, auto&& op) const {
+        assert(ranges::distance(r) > 0);
         return ranges::accumulate(rv::tail(r), *ranges::begin(r), std::forward<decltype(op)>(op));
     }
     auto operator()(auto&& r) const {
