@@ -4,6 +4,7 @@
 #include <tuple>
 #include <string_view>
 #include <utility>
+#include <algorithm>
 
 #include <fmt/core.h>
 
@@ -47,7 +48,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 75,29,13
 75,97,47,61,53
 61,13,29
-97,13,75,29,47)", 143, {}}
+97,13,75,29,47)", 143, 123}
 };
 
 auto parse(std::string_view s) {
@@ -95,7 +96,25 @@ auto run_a(std::string_view s) {
 }
 
 static auto run_b(std::string_view s) {
-    return -1;
+    auto [rules,updates] = parse(s);
+    auto less_thans = boost::unordered_map<result_type, boost::unordered_map<result_type, bool>>{};
+    for (const auto [lt,gt] : rules) {
+        less_thans[lt][gt] = true;
+        less_thans[gt][lt] = false;
+    }
+    const auto sort_pred = [&](auto lt, auto gt) {
+        return less_thans.at(lt).at(gt);
+    };
+
+    auto unsorted = updates | rv::filter([&](const auto& update) {
+        return !ranges::is_sorted(update, sort_pred);
+    });
+    auto get_middle = [&](auto update) {
+        auto it = update.begin() + update.size()/2;
+        std::nth_element(update.begin(), it, update.end(), sort_pred);
+        return *it;
+    };
+    return reduce(unsorted | rv::transform(get_middle));
 }
 
 TEST_CASE("day5a", "[day5]") {
