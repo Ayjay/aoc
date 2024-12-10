@@ -24,7 +24,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 .#..^.....
 ........#.
 #.........
-......#...)", 41, {}}
+......#...)", 41, 6}
 };
 
 const auto up    = std::tuple{-1, 0};
