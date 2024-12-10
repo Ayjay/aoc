@@ -55,27 +55,6 @@ TEST_CASE("parsing", "[day7]") {
     REQUIRE(parse("1: 2 3\n2: 3 4").size() == 2);
 }
 
-const auto equation_matches_a(auto it, auto end, auto acc, auto target) {
-    if (it == end)
-        return acc == target;
-    
-    const auto val = *it++;
-
-    if (equation_matches_a(it, end, acc + val, target)) return true;
-    return equation_matches_a(it, end, acc * val, target);
-}
-
-const auto could_be_true_a = [](const auto& equation) {
-    const auto& [test_value, operands] = equation;
-    return equation_matches_a(operands.begin()+1, operands.end(), operands.front(), test_value);
-};
-
-auto run_a(std::string_view s) {
-    auto t = SimpleTimer("Part A");
-    const auto equations = parse(s);
-    return reduce(equations | rv::filter(could_be_true_a) | rv::transform([](const auto& a) { return a[0_c]; }));
-}
-
 const auto num_digits(auto i) {
     auto digits = 1;
     while (i >= 10) {
@@ -94,26 +73,37 @@ TEST_CASE("num_digits", "[day7]") {
     REQUIRE(num_digits(585) == 3);
 }
 
-const auto equation_matches_b(auto it, auto end, auto acc, auto target) {
+const auto equation_matches(auto it, auto end, auto acc, auto target, auto include_concat) {
     if (it == end)
         return acc == target;
     
     const auto val = *it++;
 
-    if (equation_matches_b(it, end, acc + val, target)) return true;
-    if (equation_matches_b(it, end, acc * val, target)) return true;
-    return equation_matches_b(it, end, acc * std::pow(10, num_digits(val)) + val, target);
+    if (equation_matches(it, end, acc + val, target, include_concat)) return true;
+    if (equation_matches(it, end, acc * val, target, include_concat)) return true;
+    if constexpr (include_concat) {
+        return equation_matches(it, end, acc * std::pow(10, num_digits(val)) + val, target, include_concat);
+    }
+    return false;
 }
 
-const auto could_be_true_b = [](const auto& equation) {
-    const auto& [test_value, operands] = equation;
-    return equation_matches_b(operands.begin()+1, operands.end(), operands.front(), test_value);
+const auto could_be_true = [](const auto include_concat) {
+    return [include_concat](const auto& equation) {
+        const auto& [test_value, operands] = equation;
+        return equation_matches(operands.begin()+1, operands.end(), operands.front(), test_value, include_concat);
+    };
 };
+
+auto run_a(std::string_view s) {
+    auto t = SimpleTimer("Part A");
+    const auto equations = parse(s);
+    return reduce(equations | rv::filter(could_be_true(0_c)) | rv::transform([](const auto& a) { return a[0_c]; }));
+}
 
 static auto run_b(std::string_view s) {
     auto t = SimpleTimer("Part B");
     const auto equations = parse(s);
-    return reduce(equations | rv::filter(could_be_true_b) | rv::transform([](const auto& a) { return a[0_c]; }));
+    return reduce(equations | rv::filter(could_be_true(1_c)) | rv::transform([](const auto& a) { return a[0_c]; }));
 }
 
 TEST_CASE("day7a", "[day7]") {
