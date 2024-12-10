@@ -55,42 +55,25 @@ TEST_CASE("parsing", "[day7]") {
     REQUIRE(parse("1: 2 3\n2: 3 4").size() == 2);
 }
 
-auto eval(const auto& operands, const auto& operations) {
-    const auto op = [](const auto acc, const auto x) {
-        const auto [operand, is_plus] = x;
-        if (is_plus)
-            return acc + operand;
-        else
-            return acc * operand;
-    };
+const auto equation_matches_a(auto it, auto end, auto acc, auto target) {
+    if (it == end)
+        return acc == target;
+    
+    const auto val = *it++;
 
-    return ranges::accumulate(rv::zip(operands | rv::drop(1), operations), ranges::front(operands), op);
+    if (equation_matches_a(it, end, acc + val, target)) return true;
+    return equation_matches_a(it, end, acc * val, target);
 }
 
-auto make_operation_combinations(auto size) {
-    const auto combinations = std::pow(2,size);
-    auto make_operation = [combinations,size](auto i) {
-        return rv::iota(0, combinations) | rv::transform([ops=std::bitset<64>(i)](auto j) { return ops.test(j); });
-    };
-    return rv::iota(0, combinations) | rv::transform(make_operation);
-}
-
-const auto could_be_true = [](const auto& equation) {
+const auto could_be_true_a = [](const auto& equation) {
     const auto& [test_value, operands] = equation;
-    auto op_combinations = make_operation_combinations(operands.size()-1);
-    auto results = op_combinations | rv::transform([&](const auto& ops) { return eval(operands, ops); });
-    return ranges::contains(results, test_value);
+    return equation_matches_a(operands.begin()+1, operands.end(), operands.front(), test_value);
 };
 
-TEST_CASE("last-case", "[day7]") {
-    REQUIRE(eval(std::array{11,6,16,20}, std::array{true,false,true}) == 292);
-    REQUIRE(could_be_true(std::tuple{292,std::array{11,6,16,20}}) == true);
-}
-
 auto run_a(std::string_view s) {
-    //auto t = SimpleTimer("a");
+    auto t = SimpleTimer("Part A");
     const auto equations = parse(s);
-    return reduce(equations | rv::filter(could_be_true) | rv::transform([](const auto& a) { return a[0_c]; }));
+    return reduce(equations | rv::filter(could_be_true_a) | rv::transform([](const auto& a) { return a[0_c]; }));
 }
 
 const auto num_digits(auto i) {
@@ -111,24 +94,24 @@ TEST_CASE("num_digits", "[day7]") {
     REQUIRE(num_digits(585) == 3);
 }
 
-const auto equation_matches(auto it, auto end, auto acc, auto target) {
+const auto equation_matches_b(auto it, auto end, auto acc, auto target) {
     if (it == end)
         return acc == target;
     
     const auto val = *it++;
 
-    if (equation_matches(it, end, acc + val, target)) return true;
-    if (equation_matches(it, end, acc * val, target)) return true;
-    return equation_matches(it, end, acc * std::pow(10, num_digits(val)) + val, target);
+    if (equation_matches_b(it, end, acc + val, target)) return true;
+    if (equation_matches_b(it, end, acc * val, target)) return true;
+    return equation_matches_b(it, end, acc * std::pow(10, num_digits(val)) + val, target);
 }
 
 const auto could_be_true_b = [](const auto& equation) {
     const auto& [test_value, operands] = equation;
-    return equation_matches(operands.begin()+1, operands.end(), operands.front(), test_value);
+    return equation_matches_b(operands.begin()+1, operands.end(), operands.front(), test_value);
 };
 
 static auto run_b(std::string_view s) {
-    //auto t = SimpleTimer("b");
+    auto t = SimpleTimer("Part B");
     const auto equations = parse(s);
     return reduce(equations | rv::filter(could_be_true_b) | rv::transform([](const auto& a) { return a[0_c]; }));
 }
