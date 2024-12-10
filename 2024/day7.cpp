@@ -14,6 +14,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "simple_timer.hpp"
+
 namespace day7 {
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
@@ -25,7 +27,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 161011: 16 10 13
 192: 17 8 14
 21037: 9 7 18 13
-292: 11 6 16 20)", 3749, {}}
+292: 11 6 16 20)", 3749, 11387}
 };
 
 using namespace hana::literals; 
@@ -86,12 +88,49 @@ TEST_CASE("last-case", "[day7]") {
 }
 
 auto run_a(std::string_view s) {
+    //auto t = SimpleTimer("a");
     const auto equations = parse(s);
     return reduce(equations | rv::filter(could_be_true) | rv::transform([](const auto& a) { return a[0_c]; }));
 }
 
+const auto num_digits(auto i) {
+    auto digits = 1;
+    while (i >= 10) {
+        i /= 10;
+        ++digits;
+    }
+    return digits;
+}
+
+TEST_CASE("num_digits", "[day7]") {
+    REQUIRE(num_digits(0) == 1);
+    REQUIRE(num_digits(1) == 1);
+    REQUIRE(num_digits(10) == 2);
+    REQUIRE(num_digits(11) == 2);
+    REQUIRE(num_digits(99) == 2);
+    REQUIRE(num_digits(585) == 3);
+}
+
+const auto equation_matches(auto it, auto end, auto acc, auto target) {
+    if (it == end)
+        return acc == target;
+    
+    const auto val = *it++;
+
+    if (equation_matches(it, end, acc + val, target)) return true;
+    if (equation_matches(it, end, acc * val, target)) return true;
+    return equation_matches(it, end, acc * std::pow(10, num_digits(val)) + val, target);
+}
+
+const auto could_be_true_b = [](const auto& equation) {
+    const auto& [test_value, operands] = equation;
+    return equation_matches(operands.begin()+1, operands.end(), operands.front(), test_value);
+};
+
 static auto run_b(std::string_view s) {
-    return -1;
+    //auto t = SimpleTimer("b");
+    const auto equations = parse(s);
+    return reduce(equations | rv::filter(could_be_true_b) | rv::transform([](const auto& a) { return a[0_c]; }));
 }
 
 TEST_CASE("day7a", "[day7]") {
@@ -101,8 +140,7 @@ TEST_CASE("day7a", "[day7]") {
     }
 }
 
-TEST_CASE("day7b", "[day7]")
-{
+TEST_CASE("day7b", "[day7]") {
     const auto [s,_,expected] = test_data[0];
     if (expected) {
         REQUIRE(run_b(s) == *expected);
