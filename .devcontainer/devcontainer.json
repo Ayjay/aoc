@@ -19,12 +19,13 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "echo -e 'set auto-load local-gdbinit on\nset auto-load safe-path /' > /home/vscode/.gdbinit",
+	"postCreateCommand": "echo 'set auto-load local-gdbinit on\nset auto-load safe-path /' > /home/vscode/.gdbinit",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
 	"customizations": {
 		"vscode": {
+			"extensions": ["matepek.vscode-catch2-test-adapter"],
 			"settings": {
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
