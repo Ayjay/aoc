@@ -41,7 +41,7 @@ TEST_CASE("unterminated string", "[day2]") {
 }
 
 TEST_CASE("day2 parse", "[day2]") {
-    const auto [s,_,_] = test_data[0];
+    const auto [s,_,__] = test_data[0];
     const auto parsed = parse(s);
     REQUIRE(parsed.size() == 6);
     REQUIRE(parsed.front().size() == 5);

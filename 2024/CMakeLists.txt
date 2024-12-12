@@ -44,7 +44,6 @@ function(aoc24_day year day)
                 set(lib_name "libaoc${year}_${padded_day}")
                 add_library(${lib_name} OBJECT day${day}.cpp)
                 set_property(TARGET ${lib_name} PROPERTY CXX_STANDARD 26)
-                target_compile_options(${lib_name} PRIVATE -std=c++2c)
                 target_compile_definitions(${lib_name} PUBLIC AOC_DAY=${day})
                 target_link_libraries(${lib_name}
                     PRIVATE 
@@ -55,6 +54,9 @@ function(aoc24_day year day)
                 )
                 if(MSVC)
                     target_compile_options(${lib_name} PRIVATE "/Zc:__cplusplus")
+                    target_compile_definitions(${lib_name} PUBLIC WIN32_LEAN_AND_MEAN NOMINMAX)
+                else()
+                    target_compile_options(${lib_name} PRIVATE -std=c++2c)
                 endif()
 
                 target_include_directories(${lib_name}
