@@ -25,7 +25,10 @@
 	// "customizations": {},
 	"customizations": {
 		"vscode": {
-			"extensions": ["matepek.vscode-catch2-test-adapter"],
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"matepek.vscode-catch2-test-adapter"
+			],
 			"settings": {
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
