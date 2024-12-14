@@ -32,7 +32,7 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<r
 45678903
 32019012
 01329801
-10456732)", 36, {}}
+10456732)", 36, 81}
 };
 
 using namespace hana::literals; 
@@ -74,7 +74,34 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto g = grid_t(s);
+    auto trails = boost::unordered_map<vector2, int>{};
+
+    auto score = [&](this auto& self, vector2 p) {
+        if (auto it = trails.find(p); it != trails.end()) {
+            return it->second;
+        }
+        auto result = 0;
+        if (g.get(p) == '9') {
+            result = 1;
+        } else {
+            auto get_adjacent = [&](vector2 dir) { return p + dir; };
+            auto is_step_up = [&](vector2 q) {
+                auto c = g.checked_get(q);
+                return c.has_value() and *c == g.get(p) + static_cast<char>(1);
+            };
+            auto step_ups = directions 
+                | rv::transform(get_adjacent)
+                | rv::filter(is_step_up);
+            result = ranges::accumulate(step_ups, 0, std::plus{}, self);
+        }
+        trails[p] = result;
+        return result;
+    };
+
+    auto zeros = g.cells() | rv::filter([&](auto p) { return g.get(p) == '0'; });
+
+    return reduce(zeros | rv::transform(score));
 }
 
 TEST_CASE("day10a", "[day10]") {
