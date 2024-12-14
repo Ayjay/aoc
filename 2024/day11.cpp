@@ -54,19 +54,17 @@ auto step(auto stones) {
 auto steps(auto stones, int count) {
     for (auto _ : rv::iota(0,count))
         stones = step(std::move(stones));
+    return stones;
 }
 
 auto run_a(std::string_view s) {
-    auto stones = parse(s);
-
-    for (auto _ : rv::iota(0,25))
-        stones = step(std::move(stones));
-
+    auto stones = steps(parse(s), 25);
     return reduce(stones | rv::values);
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto stones = steps(parse(s), 75);
+    return reduce(stones | rv::values);
 }
 
 TEST_CASE("day11a", "[day11]") {
