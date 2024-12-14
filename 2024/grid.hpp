@@ -1,6 +1,9 @@
 #pragma once
 
 #include <tuple>
+#include <array>
+#include <string_view>
+#include "aoc2024.h"
 
 namespace grid {
 using vector2 = std::tuple<int,int>;
@@ -9,6 +12,7 @@ const inline auto up    = vector2{-1, 0};
 const inline auto down  = vector2{ 1, 0};
 const inline auto left  = vector2{ 0,-1};
 const inline auto right = vector2{ 0, 1};
+const inline auto directions = std::array{up,down,left,right};
 inline vector2 turn_right(vector2 facing) {
     if (facing == up) return right;
     else if (facing == right) return down;
@@ -36,4 +40,35 @@ inline auto indexer(const auto& map) {
         return map[row][col];
     };
 }
+
+class grid_t {
+public:
+    const std::vector<std::string_view> map;
+    const int rows;
+    const int cols;
+
+    explicit grid_t(std::string_view s) :
+        map (get_lines(s)),
+        rows(map.size()),
+        cols(map.front().size())
+    {}
+
+    char get(vector2 p) {
+        const auto [row,col] = p;
+        return map[row][col];
+    }
+
+    std::optional<char> checked_get(vector2 p) {
+        const auto [row,col] = p;
+        if (row >= 0 and row < rows and col >= 0 and col < cols)
+            return get(p);
+        else
+            return {};
+    }
+
+    auto cells() {
+        return rv::cartesian_product(rv::iota(0, rows), rv::iota(0, cols));
+    }
+};
+
 }
