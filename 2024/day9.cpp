@@ -6,6 +6,7 @@
 #include <utility>
 #include <bitset>
 #include <cmath>
+#include <list>
 
 #include <fmt/core.h>
 
@@ -22,7 +23,7 @@
 namespace day9 {
 using result_type = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
-{R"(2333133121414131402)", 1928, {}}
+{R"(2333133121414131402)", 1928, 2858}
 };
 
 using namespace hana::literals; 
@@ -102,7 +103,7 @@ TEST_CASE("checksum2", "[day9]") {
     REQUIRE(checksum(blocks) == 77);
 }
 
-std::vector<block_t> rearrange(std::vector<block_t> blocks) {
+std::vector<block_t> rearrange_a(std::vector<block_t> blocks) {
     const auto is_free = [](block_t b) { return !b.id.has_value(); };
     const auto is_file = [](block_t b) { return b.id.has_value(); };
     auto free_block = blocks.begin();
@@ -144,16 +145,72 @@ std::vector<block_t> rearrange(std::vector<block_t> blocks) {
     return blocks;
 }
 
-TEST_CASE("rearrange", "[day9]") {
-    REQUIRE(ranges::equal(rearrange({{id_t{},1},{0,1}}), std::array{block_t{0,1},block_t{id_t{},1}}));
+TEST_CASE("rearrange_a", "[day9]") {
+    REQUIRE(ranges::equal(rearrange_a({{id_t{},1},{0,1}}), std::array{block_t{0,1},block_t{id_t{},1}}));
 }
 
 auto run_a(std::string_view s) {
-    return checksum(rearrange(parse(s)));
+    return checksum(rearrange_a(parse(s)));
 }
 
+auto make_next(auto it) { return ++it; }
+auto make_prev(auto it) { return --it; }
+
+std::vector<block_t> rearrange_b(std::vector<block_t> blocks_) {
+    auto blocks = blocks_ | ranges::to<std::list>;
+    const auto is_free = [](block_t b) -> bool { return !b.id.has_value(); };
+    const auto is_file = [](block_t b) -> bool { return b.id.has_value(); };
+    auto file_block = std::find_if(blocks.rbegin(), blocks.rend(), is_file);
+    auto last_file_id = *file_block->id;
+    const auto next_file = [&] {
+        return std::find_if(file_block, blocks.rend(), [&](const block_t block) {
+            return block.id == last_file_id - 1;
+        });
+    };
+
+    for ( ; file_block != blocks.rend(); file_block = next_file()) {
+        last_file_id = *file_block->id;
+        auto free_block = std::find_if(blocks.begin(), file_block.base(), [&](const block_t block) {
+            return !block.id.has_value() and block.count >= file_block->count;
+        });
+        if (free_block != file_block.base()) {
+            free_block->id = file_block->id;
+            const auto remaining_space = free_block->count - file_block->count;
+            free_block->count = file_block->count;
+            if (remaining_space) {
+                auto next = make_next(free_block);
+                if (is_free(*next)) {
+                    next->count += remaining_space;
+                } else {
+                    blocks.insert(next, {id_t{}, remaining_space});
+                }
+            }
+            auto fwd_it = make_prev(file_block.base()); 
+            auto space_before = fwd_it != blocks.begin() and is_free(*make_prev(fwd_it));
+            auto space_after = make_next(fwd_it) != blocks.end() and is_free(*make_next(fwd_it));
+            if (space_before and space_after) {
+                const auto total_space = make_prev(fwd_it)->count + fwd_it->count + make_next(fwd_it)->count;
+                fwd_it = blocks.erase(make_prev(fwd_it), make_next(fwd_it));
+                fwd_it->count = total_space;
+            } else if (space_before) {
+                make_prev(fwd_it)->count += file_block->count;
+                fwd_it = blocks.erase(fwd_it);
+            } else if (space_after) {
+                make_next(fwd_it)->count += file_block->count;
+                fwd_it = blocks.erase(fwd_it);
+            } else {
+                file_block->id = {};
+            }
+            file_block = std::make_reverse_iterator(fwd_it);
+        }
+    }
+
+    return blocks | ranges::to<std::vector>;
+}
+
+
 static auto run_b(std::string_view s) {
-    return -1;
+    return checksum(rearrange_b(parse(s)));
 }
 
 TEST_CASE("day9a", "[day9]") {
