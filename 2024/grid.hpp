@@ -19,6 +19,12 @@ inline vector2 turn_right(vector2 facing) {
     else if (facing == down) return left;
     else return up;
 }
+inline vector2 turn_left(vector2 facing) {
+    if (facing == up) return left;
+    else if (facing == right) return up;
+    else if (facing == down) return right;
+    else return down;
+}
 inline vector2 operator+(vector2 a, vector2 b) {
     const auto [a_r,a_c] = a;
     const auto [b_r,b_c] = b;
