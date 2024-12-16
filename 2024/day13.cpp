@@ -87,7 +87,14 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    auto eqs = parse(s);
+    const auto fix_conversion = [](machine m) {
+        m.prize_x += 10000000000000;
+        m.prize_y += 10000000000000;
+        return m;
+    };
+    auto costs = eqs | rv::transform(fix_conversion) | rv::transform(solve);
+    return ranges::accumulate(costs, result_type{}, std::plus{}, [](const auto x) { return x ? *x : 0ll; });
 }
 
 TEST_CASE("day13a", "[day13]") {
