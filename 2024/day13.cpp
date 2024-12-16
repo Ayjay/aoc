@@ -35,7 +35,7 @@ Prize: X=7870, Y=6450
 
 Button A: X+69, Y+23
 Button B: X+27, Y+71
-Prize: X=18641, Y=10279)", 480, {}}
+Prize: X=18641, Y=10279)", 480, 875318608908}
 };
 
 using namespace hana::literals; 
