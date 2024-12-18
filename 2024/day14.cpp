@@ -88,12 +88,16 @@ struct floor_t {
         return ranges::accumulate(quadrant_count, 1, std::multiplies{});
     }
 
-    void render(const auto& robots, i64 time) const {
+    auto get_tiles(const auto& robots, i64 time) const {
         auto tiles = std::map<std::tuple<i64,i64>,int>{};
         for (auto r : robots) {
             ++tiles[get_position(r, time)];
         }
-        std::cout << fmt::format("tiles: {}\n", tiles);
+        return tiles;
+    }
+
+    void render(const auto& robots, i64 time) const {
+        auto tiles = get_tiles(robots, time);
         for (auto y = 0; y < height; ++y) {
             for (auto x = 0; x < width; ++x) {
                 auto count = tiles[{x,y}];
@@ -148,14 +152,22 @@ auto run_a(std::string_view s) {
 }
 
 auto run_b(std::string_view s) {
-    return -1;
-}
-
-TEST_CASE("day14b", "[day14]") {
-    for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
-        if (expected) {
-            REQUIRE(run_b(s) == *expected);
+    const auto robots = parse(s);
+    auto floor = floor_t{101,103};
+    for (auto i : rv::iota(1ll)) {
+        auto tiles_ = floor.get_tiles(robots, i);
+        auto tiles = tiles_ | rv::keys | ranges::to<boost::unordered_set> | ranges::to<std::vector>;
+        const auto get_y = [](auto v) { return std::get<1>(v); };
+        ranges::sort(tiles, std::less{}, get_y);
+        auto rows = tiles | rv::chunk_by([](auto p, auto q) { return std::get<1>(p) == std::get<1>(q); });
+        if (ranges::any_of(rows, [](auto subrange) { return ranges::distance(subrange) > 30; })) {
+            std::cout << "time=" << i << std::endl;
+            floor.render(robots, i);
+            char c;
+            std::cin >> c;
+            if (c == 'q')
+                break;
+            std::cout << std::endl;
         }
     }
 }
@@ -170,7 +182,6 @@ WEAK void entry() {
         fmt::println("A: {}", run_a(input));
     }
     {
-        auto t = SimpleTimer("Part B");
-        fmt::println("B: {}", run_b(input));
+        run_b(input);
     }
 }
