@@ -72,8 +72,9 @@ inline std::string get_input(int day) {
     return input;
 }
 
+template <class T=std::string_view>
 constexpr inline auto get_lines(std::string_view s, const std::string_view pattern = "\n") {
-    auto ret = std::vector<std::string_view>{};
+    auto ret = std::vector<T>{};
     auto prev = s.begin();
     do {
         auto it = std::search(prev, s.end(), pattern.begin(), pattern.end());

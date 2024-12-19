@@ -49,22 +49,27 @@ inline auto indexer(const auto& map) {
 
 class grid_t {
 public:
-    const std::vector<std::string_view> map;
+    std::vector<std::string> map;
     const int rows;
     const int cols;
 
     explicit grid_t(std::string_view s) :
-        map (get_lines(s)),
+        map (get_lines<std::string>(s)),
         rows(map.size()),
         cols(map.front().size())
     {}
 
-    char get(vector2 p) {
+    char& get(vector2 p) {
         const auto [row,col] = p;
         return map[row][col];
     }
 
-    std::optional<char> checked_get(vector2 p) {
+    char get(vector2 p) const {
+        const auto [row,col] = p;
+        return map[row][col];
+    }
+
+    std::optional<char> checked_get(vector2 p) const {
         const auto [row,col] = p;
         if (row >= 0 and row < rows and col >= 0 and col < cols)
             return get(p);
@@ -72,7 +77,7 @@ public:
             return {};
     }
 
-    auto cells() {
+    auto cells() const {
         return rv::cartesian_product(rv::iota(0, rows), rv::iota(0, cols));
     }
 };
