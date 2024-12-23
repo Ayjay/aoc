@@ -63,11 +63,13 @@ using namespace grid;
 struct vertex {
     vector2 pos;
     vector2 facing;
+    auto operator<=>(const vertex&) const = default;
 };
 
 struct edge {
     vertex start;
     vector2 direction;
+    auto operator<=>(const edge&) const = default;
 };
 
 }
@@ -87,7 +89,7 @@ namespace boost {
     };
 }
 
-BOOST_CONCEPT_ASSERT(( boost::graph::Graph<grid::grid_t> ));
+BOOST_CONCEPT_ASSERT(( boost::concepts::Graph<grid::grid_t> ));
 
 namespace day16 {
 i64 run_a(std::string_view s) {
