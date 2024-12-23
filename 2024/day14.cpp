@@ -20,6 +20,13 @@
 #include "grid.hpp"
 #include "simple_timer.hpp"
 
+#ifdef __clang__
+// workaround for https://github.com/llvm/llvm-project/issues/113087
+namespace std {
+template<> struct tuple_size<Catch::Decomposer> { static constexpr size_t value = 1; };
+}
+#endif
+
 namespace day14 {
 using i64 = long long;
 const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>
