@@ -80,6 +80,14 @@ public:
     auto cells() const {
         return rv::cartesian_product(rv::iota(0, rows), rv::iota(0, cols));
     }
+
+    auto cell_getter() {
+        return [&](vector2 pos) -> char& { return get(pos); };
+    }
+
+    auto cell_getter() const {
+        return [&](vector2 pos) -> char { return get(pos); };
+    }
 };
 
 }
