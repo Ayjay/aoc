@@ -1,12 +1,12 @@
 #include "aoc2024.h"
 
-#include <vector>
-#include <tuple>
-#include <string_view>
-#include <utility>
 #include <cmath>
 #include <list>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 
@@ -20,8 +20,9 @@
 
 namespace day15 {
 using i64 = long long;
-const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>
-{R"(########
+const auto test_data = std::vector{
+    std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>{
+        R"(########
 #..O.O.#
 ##@.O..#
 #...O..#
@@ -31,8 +32,10 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i
 ########
 
 <^^>>>vv<v>>v<<
-)", 2028, {}},
-{R"(#######
+)",
+        2028,
+        {}},
+    {R"(#######
 #...#.#
 #.....#
 #..OO@#
@@ -41,8 +44,10 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i
 #######
 
 <vv<<^^<<^^
-)", {}, 105},
-{R"(##########
+)",
+     {},
+     105},
+    {R"(##########
 #..O..O.O#
 #......O.#
 #.OO..O.O#
@@ -63,8 +68,8 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
 ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
-)", 10092, 9021}
-};
+)",
+     10092, 9021}};
 
 constexpr auto EMPTY = '.';
 constexpr auto ROBOT = '@';
@@ -74,15 +79,20 @@ using namespace grid;
 auto parse(std::string_view s) {
     using namespace std::string_view_literals;
     auto newlines = ranges::search(s, "\n\n"sv);
-    return std::tuple{grid_t{{s.begin(), newlines.begin()}}, std::string_view{newlines.end(), s.end()}};
+    return std::tuple{grid_t{{s.begin(), newlines.begin()}},
+                      std::string_view{newlines.end(), s.end()}};
 }
 
 const auto get_dir_from_move = [](char c) -> vector2 {
     switch (c) {
-        case '<': return left;
-        case '>': return right;
-        case '^': return up;
-        case 'v': return down;
+        case '<':
+            return left;
+        case '>':
+            return right;
+        case '^':
+            return up;
+        case 'v':
+            return down;
     }
     assert(false);
     std::unreachable();
@@ -93,7 +103,8 @@ const auto is_dir = [](char c) {
         case '<':
         case '>':
         case '^':
-        case 'v': return true;
+        case 'v':
+            return true;
     }
     return false;
 };
@@ -101,27 +112,29 @@ const auto is_dir = [](char c) {
 namespace a {
 constexpr auto BOX = 'O';
 auto gps_sum(const auto& grid) {
-    auto boxes = grid.cells() | rv::filter([&](auto p) {return grid.get(p) == BOX; });
+    auto boxes =
+        grid.cells() | rv::filter([&](auto p) { return grid.get(p) == BOX; });
     const auto gps_coord = [&](auto p) -> i64 {
-        const auto [row,col] = p;
-        return 100*row+col;
+        const auto [row, col] = p;
+        return 100 * row + col;
     };
     return reduce(boxes | rv::transform(gps_coord));
 }
 
 auto simulate(auto grid, const auto& moves) {
     auto c = grid.cells();
-    auto pos = *ranges::find_if(c, [&](vector2 p) { return grid.get(p) == ROBOT; });
+    auto pos =
+        *ranges::find_if(c, [&](vector2 p) { return grid.get(p) == ROBOT; });
     grid.get(pos) = EMPTY;
     const auto make_move = [&](vector2 dir) {
-        auto next_pos = pos+dir;
+        auto next_pos = pos + dir;
         auto& next_tile = grid.get(next_pos);
         if (next_tile == EMPTY) {
             pos = next_pos;
         } else if (next_tile == BOX) {
-            auto last_box = next_pos+dir;
+            auto last_box = next_pos + dir;
             while (grid.get(last_box) == BOX)
-                last_box = last_box+dir;
+                last_box = last_box + dir;
             if (grid.get(last_box) == EMPTY) {
                 pos = next_pos;
                 next_tile = EMPTY;
@@ -129,15 +142,16 @@ auto simulate(auto grid, const auto& moves) {
             }
         }
     };
-    for (auto move : moves | rv::filter(is_dir) | rv::transform(get_dir_from_move)) {
+    for (auto move :
+         moves | rv::filter(is_dir) | rv::transform(get_dir_from_move)) {
         make_move(move);
     }
     return grid;
 }
-}
+}  // namespace a
 
 auto run_a(std::string_view s) {
-    const auto [grid,moves] = parse(s);
+    const auto [grid, moves] = parse(s);
     return a::gps_sum(a::simulate(grid, moves));
 }
 
@@ -145,25 +159,28 @@ namespace b {
 
 constexpr auto BOX_L = '[';
 constexpr auto BOX_R = ']';
-const auto is_box = [](char c) {
-    return c == BOX_L or c == BOX_R;
-};
+const auto is_box = [](char c) { return c == BOX_L or c == BOX_R; };
 
 auto gps_sum(const auto& grid) {
-    auto boxes = grid.cells() | rv::filter([&](auto p) {return grid.get(p) == BOX_L; });
+    auto boxes =
+        grid.cells() | rv::filter([&](auto p) { return grid.get(p) == BOX_L; });
     const auto gps_coord = [&](auto p) -> i64 {
-        const auto [row,col] = p;
-        return 100*row+col;
+        const auto [row, col] = p;
+        return 100 * row + col;
     };
     return reduce(boxes | rv::transform(gps_coord));
 }
 
 const auto expand_char = [](char c) -> std::string_view {
     switch (c) {
-        case '#': return "##";
-        case '.': return "..";
-        case 'O': return "[]";
-        case '@': return "@.";
+        case '#':
+            return "##";
+        case '.':
+            return "..";
+        case 'O':
+            return "[]";
+        case '@':
+            return "@.";
     }
     assert(false);
     std::unreachable();
@@ -171,7 +188,8 @@ const auto expand_char = [](char c) -> std::string_view {
 
 auto expand_grid(auto grid) {
     for (auto& row : grid.map) {
-        row = row | rv::transform(expand_char) | rv::join | ranges::to<std::string>;
+        row = row | rv::transform(expand_char) | rv::join |
+              ranges::to<std::string>;
     }
     grid.cols *= 2;
     return grid;
@@ -180,10 +198,11 @@ auto expand_grid(auto grid) {
 auto simulate(auto grid, const auto& moves) {
     grid = expand_grid(std::move(grid));
     auto c = grid.cells();
-    auto pos = *ranges::find_if(c, [&](vector2 p) { return grid.get(p) == ROBOT; });
+    auto pos =
+        *ranges::find_if(c, [&](vector2 p) { return grid.get(p) == ROBOT; });
     grid.get(pos) = EMPTY;
     const auto make_move = [&](vector2 dir) {
-        auto next_pos = pos+dir;
+        auto next_pos = pos + dir;
         auto& next_tile = grid.get(next_pos);
         if (next_tile == EMPTY) {
             pos = next_pos;
@@ -195,24 +214,26 @@ auto simulate(auto grid, const auto& moves) {
                 if (grid.get(p) == BOX_L)
                     return p;
                 assert(grid.get(p) == BOX_R);
-                return p+left;
+                return p + left;
             };
             boxes_for_level.push_back(fix_box_pos(next_pos));
             while (not blocked and not boxes_for_level.empty()) {
                 auto boxes_for_next_level = std::vector<vector2>{};
                 for (auto box : boxes_for_level) {
-                    auto above_left_pos = box+dir;
+                    auto above_left_pos = box + dir;
                     auto above_left = grid.get(above_left_pos);
-                    auto above_right_pos = (box+right)+dir;
+                    auto above_right_pos = (box + right) + dir;
                     auto above_right = grid.get(above_right_pos);
                     if (above_left == WALL or above_right == WALL) {
                         blocked = true;
                         break;
                     }
                     if (is_box(above_left))
-                        boxes_for_next_level.push_back(fix_box_pos(above_left_pos));
+                        boxes_for_next_level.push_back(
+                            fix_box_pos(above_left_pos));
                     if (above_left != BOX_L and is_box(above_right))
-                        boxes_for_next_level.push_back(fix_box_pos(above_right_pos));
+                        boxes_for_next_level.push_back(
+                            fix_box_pos(above_right_pos));
                     boxes.push_back(box);
                 }
                 boxes_for_level = std::move(boxes_for_next_level);
@@ -220,30 +241,31 @@ auto simulate(auto grid, const auto& moves) {
 
             if (not blocked) {
                 for (auto box : boxes | rv::reverse) {
-                    grid.get(box+dir) = BOX_L;
-                    grid.get(box+right+dir) = BOX_R;
+                    grid.get(box + dir) = BOX_L;
+                    grid.get(box + right + dir) = BOX_R;
                     grid.get(box) = EMPTY;
-                    grid.get(box+right) = EMPTY;
+                    grid.get(box + right) = EMPTY;
                 }
                 pos = pos + dir;
             }
         }
     };
-    for (auto move : moves | rv::filter(is_dir) | rv::transform(get_dir_from_move)) {
+    for (auto move :
+         moves | rv::filter(is_dir) | rv::transform(get_dir_from_move)) {
         make_move(move);
     }
     return grid;
 }
-}
+}  // namespace b
 
 auto run_b(std::string_view s) {
-    const auto [grid,moves] = parse(s);
+    const auto [grid, moves] = parse(s);
     return b::gps_sum(b::simulate(grid, moves));
 }
 
 TEST_CASE("day15a", "[day15]") {
     for (const auto& test : test_data) {
-        const auto [s,expected,_] = test;
+        const auto [s, expected, _] = test;
         if (expected) {
             REQUIRE(run_a(s) == *expected);
         }
@@ -252,14 +274,14 @@ TEST_CASE("day15a", "[day15]") {
 
 TEST_CASE("day15b", "[day15]") {
     for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
+        const auto [s, _, expected] = test;
         if (expected) {
             REQUIRE(run_b(s) == *expected);
         }
     }
 }
 
-}
+}  // namespace day15
 
 WEAK void entry() {
     using namespace day15;

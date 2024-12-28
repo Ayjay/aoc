@@ -1,12 +1,12 @@
 #include "aoc2024.h"
 
-#include <vector>
-#include <tuple>
-#include <string_view>
-#include <utility>
 #include <cmath>
 #include <list>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 
@@ -20,28 +20,36 @@
 
 namespace day12 {
 using result_type = long long;
-const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
-{R"(AAAA
+const auto test_data =
+    std::vector{std::tuple<std::string_view,
+                           std::optional<result_type>,
+                           std::optional<result_type>>{R"(AAAA
 BBCD
 BBCC
-EEEC)", 140, 80},
-{R"(OOOOO
+EEEC)",
+                                                       140, 80},
+                {R"(OOOOO
 OXOXO
 OOOOO
 OXOXO
-OOOOO)", 772, 436},
-{R"(EEEEE
+OOOOO)",
+                 772, 436},
+                {R"(EEEEE
 EXXXX
 EEEEE
 EXXXX
-EEEEE)", {}, 236},
-{R"(AAAAAA
+EEEEE)",
+                 {},
+                 236},
+                {R"(AAAAAA
 AAABBA
 AAABBA
 ABBAAA
 ABBAAA
-AAAAAA)", {}, 368},
-{R"(RRRRIICCFF
+AAAAAA)",
+                 {},
+                 368},
+                {R"(RRRRIICCFF
 RRRRIICCCF
 VVRRRCCFFF
 VVRCCCJFFF
@@ -50,12 +58,11 @@ VVIVCCJJEE
 VVIIICJJEE
 MIIIIIJJEE
 MIIISIJEEE
-MMMISSJEEE)", 1930, 1206}
-};
+MMMISSJEEE)",
+                 1930, 1206}};
 
-using namespace hana::literals; 
-using namespace grid; 
-
+using namespace hana::literals;
+using namespace grid;
 
 auto run_a(std::string_view s) {
     auto g = grid_t{s};
@@ -79,7 +86,8 @@ auto run_a(std::string_view s) {
             auto cell_perimeter = result_type{4};
             for (auto dir : directions) {
                 const auto neighbour_pos = q + dir;
-                if (const auto neighbour = g.checked_get(neighbour_pos); neighbour and *neighbour == region) {
+                if (const auto neighbour = g.checked_get(neighbour_pos);
+                    neighbour and *neighbour == region) {
                     --cell_perimeter;
                     s.push_back(neighbour_pos);
                 }
@@ -102,7 +110,7 @@ auto run_b(std::string_view s) {
 
         auto s = std::vector{p};
         auto region = g.get(p);
-        auto edges = boost::unordered_set<std::tuple<vector2,vector2>>{};
+        auto edges = boost::unordered_set<std::tuple<vector2, vector2>>{};
         auto area = result_type{};
         while (!s.empty()) {
             const auto q = s.back();
@@ -115,22 +123,26 @@ auto run_b(std::string_view s) {
                 return g.checked_get(u) == region;
             };
             for (const auto dir : directions) {
-                if (in_region(q+dir)) {
-                    s.push_back({q+dir});
+                if (in_region(q + dir)) {
+                    s.push_back({q + dir});
                 } else {
-                    edges.insert({q,dir});
+                    edges.insert({q, dir});
                 }
             }
         }
         auto perimeter = result_type{};
         while (!edges.empty()) {
-            auto [q,q_norm] = *edges.begin();
+            auto [q, q_norm] = *edges.begin();
             ++perimeter;
             edges.erase(edges.begin());
             auto it = edges.begin();
-            for (auto q_left = q + turn_left(q_norm); (it = edges.find({q_left, q_norm})) != edges.end(); q_left = q_left + turn_left(q_norm))
+            for (auto q_left = q + turn_left(q_norm);
+                 (it = edges.find({q_left, q_norm})) != edges.end();
+                 q_left = q_left + turn_left(q_norm))
                 edges.erase(it);
-            for (auto q_right = q + turn_right(q_norm); (it = edges.find({q_right, q_norm})) != edges.end(); q_right = q_right + turn_right(q_norm))
+            for (auto q_right = q + turn_right(q_norm);
+                 (it = edges.find({q_right, q_norm})) != edges.end();
+                 q_right = q_right + turn_right(q_norm))
                 edges.erase(it);
         }
         price += area * perimeter;
@@ -141,7 +153,7 @@ auto run_b(std::string_view s) {
 
 TEST_CASE("day12a", "[day12]") {
     for (const auto& test : test_data) {
-        const auto [s,expected,_] = test;
+        const auto [s, expected, _] = test;
         if (expected) {
             REQUIRE(run_a(s) == *expected);
         }
@@ -150,14 +162,14 @@ TEST_CASE("day12a", "[day12]") {
 
 TEST_CASE("day12b", "[day12]") {
     for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
+        const auto [s, _, expected] = test;
         if (expected) {
             REQUIRE(run_b(s) == *expected);
         }
     }
 }
 
-}
+}  // namespace day12
 
 WEAK void entry() {
     using namespace day12;

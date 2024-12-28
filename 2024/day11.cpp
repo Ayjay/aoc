@@ -1,12 +1,12 @@
 #include "aoc2024.h"
 
-#include <vector>
-#include <tuple>
-#include <string_view>
-#include <utility>
 #include <cmath>
 #include <list>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 
@@ -19,12 +19,13 @@
 
 namespace day11 {
 using result_type = long long;
-const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
-{R"(125 17)", 55312, {}}
-};
+const auto test_data =
+    std::vector{std::tuple<std::string_view,
+                           std::optional<result_type>,
+                           std::optional<result_type>>{R"(125 17)", 55312, {}}};
 
-using namespace hana::literals; 
-using namespace grid; 
+using namespace hana::literals;
+using namespace grid;
 
 auto parse(std::string_view s) {
     auto raw_stones = *bp::parse(s, bp::long_long % ' ');
@@ -37,11 +38,13 @@ auto parse(std::string_view s) {
 auto step(auto stones) {
     using map_type = decltype(stones);
     auto new_stones = map_type{};
-    for (auto [value,count] : stones) {
+    for (auto [value, count] : stones) {
         if (value == 0) {
             new_stones[1] += count;
-        } else if (const auto digits = static_cast<result_type>(std::log10(value)) + 1; digits % 2 == 0) {
-            const auto d = static_cast<result_type>(std::pow(10ll, digits/2));
+        } else if (const auto digits =
+                       static_cast<result_type>(std::log10(value)) + 1;
+                   digits % 2 == 0) {
+            const auto d = static_cast<result_type>(std::pow(10ll, digits / 2));
             new_stones[value / d] += count;
             new_stones[value % d] += count;
         } else {
@@ -52,7 +55,7 @@ auto step(auto stones) {
 }
 
 auto steps(auto stones, int count) {
-    for (auto _ : rv::iota(0,count))
+    for (auto _ : rv::iota(0, count))
         stones = step(std::move(stones));
     return stones;
 }
@@ -69,7 +72,7 @@ auto run_b(std::string_view s) {
 
 TEST_CASE("day11a", "[day11]") {
     for (const auto& test : test_data) {
-        const auto [s,expected,_] = test;
+        const auto [s, expected, _] = test;
         if (expected) {
             REQUIRE(run_a(s) == *expected);
         }
@@ -78,14 +81,14 @@ TEST_CASE("day11a", "[day11]") {
 
 TEST_CASE("day11b", "[day11]") {
     for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
+        const auto [s, _, expected] = test;
         if (expected) {
             REQUIRE(run_b(s) == *expected);
         }
     }
 }
 
-}
+}  // namespace day11
 
 WEAK void entry() {
     using namespace day11;

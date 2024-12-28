@@ -1,12 +1,12 @@
 #include "aoc2024.h"
 
-#include <vector>
-#include <tuple>
-#include <string_view>
-#include <utility>
 #include <cmath>
 #include <list>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 
@@ -20,8 +20,10 @@
 
 namespace day13 {
 using result_type = long long;
-const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<result_type>, std::optional<result_type>>
-{R"(Button A: X+94, Y+34
+const auto test_data =
+    std::vector{std::tuple<std::string_view,
+                           std::optional<result_type>,
+                           std::optional<result_type>>{R"(Button A: X+94, Y+34
 Button B: X+22, Y+67
 Prize: X=8400, Y=5400
 
@@ -35,10 +37,10 @@ Prize: X=7870, Y=6450
 
 Button A: X+69, Y+23
 Button B: X+27, Y+71
-Prize: X=18641, Y=10279)", 480, 875318608908}
-};
+Prize: X=18641, Y=10279)",
+                                                       480, 875318608908}};
 
-using namespace hana::literals; 
+using namespace hana::literals;
 using namespace grid;
 
 struct machine {
@@ -51,7 +53,7 @@ struct machine {
 };
 
 bp::rule<struct equation, machine> equation = "equation";
-auto const equation_def = 
+auto const equation_def =
     "Button A: X+" > bp::long_long > ", Y+" > bp::long_long > bp::eol >
     "Button B: X+" > bp::long_long > ", Y+" > bp::long_long > bp::eol >
     "Prize: X=" > bp::long_long > ", Y=" > bp::long_long > -bp::eol;
@@ -70,7 +72,7 @@ std::optional<T> integer_div(T a, T b) {
 
 std::optional<result_type> solve(machine m) {
     const auto b_divisor = m.a_x * m.b_y - m.a_y * m.b_x;
-    const auto b_quotient = m.prize_y*m.a_x - m.prize_x*m.a_y;
+    const auto b_quotient = m.prize_y * m.a_x - m.prize_x * m.a_y;
     const auto b = integer_div(b_quotient, b_divisor);
     if (!b)
         return {};
@@ -83,7 +85,8 @@ std::optional<result_type> solve(machine m) {
 auto run_a(std::string_view s) {
     auto eqs = parse(s);
     auto costs = eqs | rv::transform(solve);
-    return ranges::accumulate(costs, result_type{}, std::plus{}, [](const auto x) { return x ? *x : 0ll; });
+    return ranges::accumulate(costs, result_type{}, std::plus{},
+                              [](const auto x) { return x ? *x : 0ll; });
 }
 
 auto run_b(std::string_view s) {
@@ -94,12 +97,13 @@ auto run_b(std::string_view s) {
         return m;
     };
     auto costs = eqs | rv::transform(fix_conversion) | rv::transform(solve);
-    return ranges::accumulate(costs, result_type{}, std::plus{}, [](const auto x) { return x ? *x : 0ll; });
+    return ranges::accumulate(costs, result_type{}, std::plus{},
+                              [](const auto x) { return x ? *x : 0ll; });
 }
 
 TEST_CASE("day13a", "[day13]") {
     for (const auto& test : test_data) {
-        const auto [s,expected,_] = test;
+        const auto [s, expected, _] = test;
         if (expected) {
             REQUIRE(run_a(s) == *expected);
         }
@@ -108,14 +112,14 @@ TEST_CASE("day13a", "[day13]") {
 
 TEST_CASE("day13b", "[day13]") {
     for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
+        const auto [s, _, expected] = test;
         if (expected) {
             REQUIRE(run_b(s) == *expected);
         }
     }
 }
 
-}
+}  // namespace day13
 
 WEAK void entry() {
     using namespace day13;

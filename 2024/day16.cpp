@@ -1,20 +1,20 @@
 #include "aoc2024.h"
 
-#include <vector>
-#include <tuple>
-#include <string_view>
-#include <utility>
 #include <cmath>
 #include <list>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <fmt/core.h>
 
+#include <boost/graph/graph_concepts.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/multi_array.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/multi_array.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/graph_concepts.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -23,8 +23,9 @@
 
 namespace day16 {
 using i64 = long long;
-const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>
-{R"(###############
+const auto test_data = std::vector{
+    std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>{
+        R"(###############
 #.......#....E#
 #.#.###.#.###.#
 #.....#.#...#.#
@@ -38,8 +39,10 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i
 #.....#...#.#.#
 #.###.#.#.#.#.#
 #S..#.....#...#
-###############)", 7036, {}},
-{R"(#################
+###############)",
+        7036,
+        {}},
+    {R"(#################
 #...#...#...#..E#
 #.#.#.#.#.#.#.#.#
 #.#.#.#...#...#.#
@@ -55,8 +58,9 @@ const auto test_data = std::vector{ std::tuple<std::string_view, std::optional<i
 #.#.#.........#.#
 #.#.#.#########.#
 #S#.............#
-#################)", 11048, {}}
-};
+#################)",
+     11048,
+     {}}};
 
 using namespace grid;
 
@@ -72,24 +76,22 @@ struct edge {
     auto operator<=>(const edge&) const = default;
 };
 
-}
+}  // namespace day16
 
 namespace boost {
-    template <>
-    struct graph_traits<grid::grid_t> {
-        using vertex_descriptor = day16::vertex;
-        using edge_descriptor = day16::edge;
-        using directed_category = directed_tag;
-        using edge_parallel_category = disallow_parallel_edge_tag;
-        using traversal_category = adjacency_graph_tag;
+template <>
+struct graph_traits<grid::grid_t> {
+    using vertex_descriptor = day16::vertex;
+    using edge_descriptor = day16::edge;
+    using directed_category = directed_tag;
+    using edge_parallel_category = disallow_parallel_edge_tag;
+    using traversal_category = adjacency_graph_tag;
 
-        static vertex_descriptor null_vertex() {
-            return {{0,0},{0,0}};
-        }
-    };
-}
+    static vertex_descriptor null_vertex() { return {{0, 0}, {0, 0}}; }
+};
+}  // namespace boost
 
-BOOST_CONCEPT_ASSERT(( boost::concepts::Graph<grid::grid_t> ));
+BOOST_CONCEPT_ASSERT((boost::concepts::Graph<grid::grid_t>));
 
 namespace day16 {
 i64 run_a(std::string_view s) {
@@ -97,7 +99,8 @@ i64 run_a(std::string_view s) {
     // const auto start = ranges::find(maze.cells(), 'S', maze.cell_getter());
     // const auto end = ranges::find(maze.cells(), 'E', maze.cell_getter());
     // const auto can_move = [&](vector2 p) { return maze.get(p) != '#'; };
-    // const auto vertices = maze.cells() | rv::filter(can_move) | ranges::to<std::vector>;
+    // const auto vertices = maze.cells() | rv::filter(can_move) |
+    // ranges::to<std::vector>;
 
     // const auto edges = [&](vertex v) -> vertex {
     //     if (can_move(v.pos + turn_left(v.facing)))
@@ -108,8 +111,8 @@ i64 run_a(std::string_view s) {
     //         co_yield v.pos + turn_right(v.facing);
     // };
 
-
-    // auto distances = boost::multi_array<i64, 3>{boost::extents[maze.rows][maze.cols][4]};
+    // auto distances = boost::multi_array<i64,
+    // 3>{boost::extents[maze.rows][maze.cols][4]};
 
     return 0;
 }
@@ -120,7 +123,7 @@ auto run_b(std::string_view s) {
 
 TEST_CASE("day16a", "[day16]") {
     for (const auto& test : test_data) {
-        const auto [s,expected,_] = test;
+        const auto [s, expected, _] = test;
         if (expected) {
             REQUIRE(run_a(s) == *expected);
         }
@@ -129,14 +132,14 @@ TEST_CASE("day16a", "[day16]") {
 
 TEST_CASE("day16b", "[day16]") {
     for (const auto& test : test_data) {
-        const auto [s,_,expected] = test;
+        const auto [s, _, expected] = test;
         if (expected) {
             REQUIRE(run_b(s) == *expected);
         }
     }
 }
 
-}
+}  // namespace day16
 
 WEAK void entry() {
     using namespace day16;
