@@ -1,76 +1,90 @@
 #pragma once
 
-#include <tuple>
 #include <array>
+#include <cmath>
 #include <string_view>
+#include <tuple>
 #include "aoc2024.h"
 
 namespace grid {
-using vector2 = std::tuple<int,int>;
+using vector2 = std::tuple<int, int>;
 
-const inline auto up    = vector2{-1, 0};
-const inline auto down  = vector2{ 1, 0};
-const inline auto left  = vector2{ 0,-1};
-const inline auto right = vector2{ 0, 1};
-const inline auto directions = std::array{up,down,left,right};
-inline vector2 turn_right(vector2 facing) {
-    if (facing == up) return right;
-    else if (facing == right) return down;
-    else if (facing == down) return left;
-    else return up;
+constexpr inline auto up = vector2{-1, 0};
+constexpr inline auto down = vector2{1, 0};
+constexpr inline auto left = vector2{0, -1};
+constexpr inline auto right = vector2{0, 1};
+constexpr inline auto directions = std::array{up, down, left, right};
+constexpr inline vector2 turn_right(vector2 facing) {
+    if (facing == up)
+        return right;
+    else if (facing == right)
+        return down;
+    else if (facing == down)
+        return left;
+    else
+        return up;
 }
-inline vector2 turn_left(vector2 facing) {
-    if (facing == up) return left;
-    else if (facing == right) return up;
-    else if (facing == down) return right;
-    else return down;
+constexpr inline vector2 turn_left(vector2 facing) {
+    if (facing == up)
+        return left;
+    else if (facing == right)
+        return up;
+    else if (facing == down)
+        return right;
+    else
+        return down;
 }
 inline vector2 operator+(vector2 a, vector2 b) {
-    const auto [a_r,a_c] = a;
-    const auto [b_r,b_c] = b;
-    return {a_r+b_r,a_c+b_c};
+    const auto [a_r, a_c] = a;
+    const auto [b_r, b_c] = b;
+    return {a_r + b_r, a_c + b_c};
 }
 inline vector2 operator-(vector2 a, vector2 b) {
-    const auto [a_r,a_c] = a;
-    const auto [b_r,b_c] = b;
-    return {a_r-b_r,a_c-b_c};
+    const auto [a_r, a_c] = a;
+    const auto [b_r, b_c] = b;
+    return {a_r - b_r, a_c - b_c};
 }
 inline vector2 operator*(vector2 a, auto constant) {
-    const auto [a_r,a_c] = a;
-    return {a_r*constant,a_c*constant};
+    const auto [a_r, a_c] = a;
+    return {a_r * constant, a_c * constant};
+}
+
+inline auto distance(vector2 a, vector2 b) {
+    const auto [a_r, a_c] = a;
+    const auto [b_r, b_c] = b;
+    return std::sqrt(std::pow(b_r - a_r, 2) + std::pow(b_c - a_c, 2));
 }
 
 inline auto indexer(const auto& map) {
     return [&](const vector2 p) {
-        const auto [row,col] = p;
+        const auto [row, col] = p;
         return map[row][col];
     };
 }
 
 class grid_t {
-public:
+   public:
     std::vector<std::string> map;
     int rows;
     int cols;
 
-    explicit grid_t(std::string_view s) :
-        map (get_lines<std::string>(s)),
-        rows(map.size()),
-        cols(map.front().size())
-    {}
+    explicit grid_t(std::string_view s)
+        : map(get_lines<std::string>(s)),
+          rows(map.size()),
+          cols(map.front().size()) {}
 
     char& get(vector2 p) {
-        const auto [row,col] = p;
+        const auto [row, col] = p;
         return map[row][col];
     }
 
     char get(vector2 p) const {
-        const auto [row,col] = p;
+        const auto [row, col] = p;
         return map[row][col];
     }
 
     std::optional<char> checked_get(vector2 p) const {
-        const auto [row,col] = p;
+        const auto [row, col] = p;
         if (row >= 0 and row < rows and col >= 0 and col < cols)
             return get(p);
         else
@@ -90,4 +104,4 @@ public:
     }
 };
 
-}
+}  // namespace grid
