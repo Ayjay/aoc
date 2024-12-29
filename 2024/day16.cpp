@@ -19,6 +19,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/property_map/function_property_map.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <range/v3/algorithm/min.hpp>
 
@@ -46,8 +47,7 @@ const auto test_data = std::vector{
 #.###.#.#.#.#.#
 #S..#.....#...#
 ###############)",
-        7036,
-        {}},
+        7036, 45},
     {R"(#################
 #...#...#...#..E#
 #.#.#.#.#.#.#.#.#
@@ -65,8 +65,7 @@ const auto test_data = std::vector{
 #.#.#.#########.#
 #S#.............#
 #################)",
-     11048,
-     {}}};
+     11048, 64}};
 
 using namespace grid;
 
@@ -198,46 +197,60 @@ BOOST_CONCEPT_ASSERT((boost::concepts::IncidenceGraph<grid::grid_t>));
 
 namespace day16 {
 
+const auto edge_weight = [](edge e) {
+    if (e.direction == e.start.facing)
+        return 1;
+    else
+        return 1001;
+};
+
 class astar_goal_visitor : public boost::default_astar_visitor {
    public:
 };
 
-i64 run_a(std::string_view s) {
+auto find_paths(std::string_view s) {
     const auto maze = grid_t{s};
-    auto cells = maze.cells();
-    const vector2 start = *ranges::find(cells, 'S', maze.cell_getter());
+    const auto cells = maze.cells();
+    const auto start = *ranges::find(cells, 'S', maze.cell_getter());
     const auto start_vertex = vertex{start, right};
-    const vector2 end = *ranges::find(cells, 'E', maze.cell_getter());
-    const auto heuristic = [=](vertex v) { return distance(v.pos, end); };
+    const auto end = *ranges::find(cells, 'E', maze.cell_getter());
 
-    const auto edge_weight = [](edge e) {
-        if (e.direction == e.start.facing)
-            return 1;
-        else
-            return 1001;
-    };
-    auto predecessors = boost::unordered_map<vertex, vertex>{};
-    auto ranks = boost::unordered_map<vertex, decltype(heuristic({}))>{};
+    auto predecessors = boost::unordered_multimap<vertex, vertex>{};
     auto distances = boost::unordered_map<vertex, int>{};
     distances[start_vertex] = 0;
-    auto distance_prop_fn = [&](vertex v) -> int& {
+    const auto distance_prop_fn = [&](vertex v) -> int& {
         return distances.insert({v, std::numeric_limits<int>::max()})
             .first->second;
     };
 
-    boost::astar_search_no_init_tree(
-        maze, start_vertex, heuristic,
-        boost::weight_map(
-            boost::function_property_map<decltype(edge_weight), edge,
-                                         decltype(edge_weight({}))>(
-                edge_weight))
-            .visitor(astar_goal_visitor{})
-            .predecessor_map(boost::make_assoc_property_map(predecessors))
-            .rank_map(boost::make_assoc_property_map(ranks))
-            .distance_map(
-                boost::function_property_map<decltype(distance_prop_fn), vertex,
-                                             int&>(distance_prop_fn)));
+    auto stack = std::vector{start_vertex};
+    while (!stack.empty()) {
+        const auto v = stack.back();
+        stack.pop_back();
 
+        auto& v_distance = distance_prop_fn(v);
+        for (auto [edge_it, edge_end] = out_edges(v, maze); edge_it != edge_end;
+             ++edge_it) {
+            const auto e = *edge_it;
+            const auto w = target(e, maze);
+            const auto e_weight = edge_weight(e);
+            auto& w_weight = distance_prop_fn(w);
+            if (w_weight == std::numeric_limits<int>::max())
+                stack.push_back(w);
+            if (v_distance + e_weight < w_weight) {
+                w_weight = v_distance + e_weight;
+                predecessors.erase(w);
+            }
+            if (v_distance + e_weight <= w_weight)
+                predecessors.insert({w, v});
+        }
+    }
+
+    return std::tuple{maze, start, end, predecessors, distances};
+}
+
+i64 run_a(std::string_view s) {
+    const auto [_, _, end, _, distances] = find_paths(s);
     auto goal_vertices =
         directions |
         rv::transform([&](vector2 dir) { return vertex{end, dir}; }) |
@@ -249,8 +262,64 @@ i64 run_a(std::string_view s) {
     return ranges::min(goal_vertices);
 }
 
+auto find_all_minimal(auto range, auto proj = std::identity{}) {
+    using monoid = std::decay_t<decltype(proj(
+        std::declval<ranges::range_value_t<decltype(range)>>()))>;
+    const auto combine = [&](auto acc, auto el) {
+        auto& [current, min_elements] = acc;
+        auto val = proj(el);
+        if (val < current) {
+            current = val;
+            min_elements.clear();
+        }
+        if (val <= current)
+            min_elements.push_back(el);
+        return std::move(acc);
+    };
+    auto get_elements = [](auto acc) { return std::get<1>(acc); };
+    return std::get<1>(ranges::accumulate(
+        range,
+        std::tuple{std::numeric_limits<monoid>::max(),
+                   std::vector<ranges::range_value_t<decltype(range)>>{}},
+        combine));
+}
+
+TEST_CASE("find_all_minimal", "[day16]") {
+    REQUIRE(find_all_minimal<std::vector<int>, std::identity>(
+                std::vector{1, 1, 2, 3}) == std::vector{1, 1});
+}
+
 auto run_b(std::string_view s) {
-    return -1;
+    const auto [_, start, end, predecessors, distances] = find_paths(s);
+
+    fmt::println("{}", fmt::join(predecessors, "\n"));
+
+    const auto goal_distance = [&](vertex v) {
+        auto it = distances.find(v);
+        return it == distances.end() ? std::numeric_limits<int>::max()
+                                     : it->second;
+    };
+    const auto goal_vertices = find_all_minimal(
+        directions |
+            rv::transform([&](vector2 dir) { return vertex{end, dir}; }),
+        goal_distance);
+    auto shortest_tiles = boost::unordered_set<vertex>{};
+    auto shortest_stack = goal_vertices;
+    while (not shortest_stack.empty()) {
+        const auto v = shortest_stack.back();
+        shortest_stack.pop_back();
+
+        if (v != vertex{start, right} and shortest_tiles.insert(v).second) {
+            const auto predec = predecessors.equal_range(v);
+            const auto predec_range =
+                ranges::subrange{predec.first, predec.second};
+            const auto get_second = [](auto kv) { return kv.second; };
+            const auto predec_values = predec_range | rv::transform(get_second);
+            shortest_stack.insert(shortest_stack.end(), predec_values.begin(),
+                                  predec_values.end());
+        }
+    }
+    return shortest_tiles.size();
 }
 
 TEST_CASE("day16a", "[day16]") {
