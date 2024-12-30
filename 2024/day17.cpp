@@ -11,8 +11,8 @@
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
 
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include <boost/container/static_vector.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -22,23 +22,31 @@ namespace day17 {
 using i64 = long long;
 const auto test_data = std::vector{std::tuple<std::string_view,
                                               std::optional<std::string_view>,
-                                              std::optional<std::string_view>>{
-    R"(Register A: 729
+                                              std::optional<i64>>{
+                                       R"(Register A: 729
 Register B: 0
 Register C: 0
 
 Program: 0,1,5,4,3,0
 )",
-    "4,6,3,5,6,3,5,2,1,0",
-    {}}};
+                                       "4,6,3,5,6,3,5,2,1,0",
+                                       {}},
+                                   {
+                                       R"(Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
+)",
+                                       {},
+                                       117440}};
 
 struct computer {
     i64 a = 0;
     i64 b = 0;
     i64 c = 0;
     i64 ip = 0;
-    std::vector<i64> program;
-    std::vector<i64> output;
+    boost::container::static_vector<i64, 16> program;
 
     struct program_halt {};
 
@@ -80,13 +88,13 @@ struct computer {
         ++ip;
     }
 
-    void out() { output.push_back(combo_operand() % 8); }
+    void out(auto& it) { *it++ = combo_operand() % 8; }
 
     void bdv() { dv(b); }
 
     void cdv() { dv(c); }
 
-    auto run() {
+    void simulate(auto it) {
         while (ip < program.size()) {
             switch (program[ip++]) {
                 case 0:
@@ -105,7 +113,7 @@ struct computer {
                     bxc();
                     break;
                 case 5:
-                    out();
+                    out(it);
                     break;
                 case 6:
                     bdv();
@@ -115,7 +123,12 @@ struct computer {
                     break;
             }
         }
-        return fmt::format("{}", fmt::join(output, ","));
+    }
+
+    auto run() {
+        std::vector<i64> o;
+        simulate(std::back_inserter(o));
+        return fmt::format("{}", fmt::join(o, ","));
     }
 };
 
@@ -148,17 +161,14 @@ TEST_CASE("test5", "[day17]") {
     REQUIRE(comp.b == 44354);
 }
 
-TEST_CASE("operand_halt", "[day17]") {
-    auto comp = computer{.program = {5}};
-    REQUIRE(comp.run() == "");
-}
-
 computer parse(std::string_view s) {
     auto ret = computer{};
     auto set_register = [](i64& r) {
         return [&](auto& ctx) { r = _attr(ctx); };
     };
-    auto set_program = [&](auto& ctx) { ret.program = _attr(ctx); };
+    auto set_program = [&](auto& ctx) {
+        ret.program.assign(_attr(ctx).begin(), _attr(ctx).end());
+    };
     bp::parse(s,
               "Register A:" > bp::long_long[set_register(ret.a)] >
                   "Register B:" > bp::long_long[set_register(ret.b)] >
@@ -172,8 +182,24 @@ auto run_a(std::string_view s) {
     return parse(s).run();
 }
 
+struct not_match {};
+
 auto run_b(std::string_view s) {
-    return "";
+    auto comp = parse(s);
+    for (comp.a = 0;; ++comp.a) {
+        auto comp_copy = comp;
+        try {
+            auto it = comp.program.begin();
+            comp_copy.simulate(
+                boost::make_function_output_iterator([&it](auto v) mutable {
+                    if (v != *it++)
+                        throw not_match{};
+                }));
+            if (it == comp.program.end())
+                return comp.a;
+        } catch (not_match) {
+        }
+    }
 }
 
 TEST_CASE("day17a", "[day19]") {
