@@ -13,6 +13,16 @@ constexpr inline auto up = vector2{-1, 0};
 constexpr inline auto down = vector2{1, 0};
 constexpr inline auto left = vector2{0, -1};
 constexpr inline auto right = vector2{0, 1};
+constexpr inline std::string_view dir_to_string(vector2 dir) {
+    if (dir == up)
+        return "up";
+    if (dir == down)
+        return "down";
+    if (dir == left)
+        return "left";
+    return "right";
+}
+
 constexpr inline auto directions = std::array{up, down, left, right};
 constexpr inline vector2 turn_right(vector2 facing) {
     if (facing == up)

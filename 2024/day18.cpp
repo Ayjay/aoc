@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <queue>
 
 #include <fmt/core.h>
 #include <fmt/ostream.h>
@@ -13,11 +14,9 @@
 
 #include <boost/container_hash/hash.hpp>
 #include <boost/describe.hpp>
-#include <boost/graph/astar_search.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/graph_traits.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/property_map/function_property_map.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -27,6 +26,8 @@
 
 #include "grid.hpp"
 #include "simple_timer.hpp"
+
+using namespace grid;
 
 namespace day18 {
 using i64 = long long;
@@ -57,10 +58,19 @@ const auto test_data = std::vector{
 0,5
 1,6
 2,0)",
-        22, {}}
-    };
+        22,
+        {}}};
 
-using namespace grid;
+struct memory {
+    int rows;
+    int cols;
+    boost::unordered_set<vector2> corrupted;
+    bool valid(vector2 pos) const {
+        const auto [row, col] = pos;
+        return row >= 0 and row < rows and col >= 0 and col < cols and
+               not corrupted.contains(pos);
+    }
+};
 
 struct edge {
     vector2 start;
@@ -68,7 +78,7 @@ struct edge {
     auto operator<=>(const edge&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const edge& e) {
         return os << fmt::format("[{}] {}", e.start,
-                                 dir_to_string(e.direction));
+                                 grid::dir_to_string(e.direction));
     }
 };
 BOOST_DESCRIBE_STRUCT(edge, (), (start, direction));
@@ -78,55 +88,58 @@ template <>
 struct fmt::formatter<day18::edge> : ostream_formatter {};
 
 namespace day18 {
-vector2 source(edge e, const grid_t& g) {
+vector2 source(edge e, const memory& g) {
     return e.start;
 }
 
-vector2 target(edge e, const grid_t& g) {
-    return {e.start.pos + e.direction, e.direction};
+vector2 target(edge e, const memory& g) {
+    return e.start + e.direction;
 }
 
 struct edge_iterator
     : public boost::iterator_adaptor<edge_iterator,
-                                    decltype(directions.begin()),
-                                    boost::forward_traversal_tag,
-                                    edge> {
-    const grid_t* g = nullptr;
+                                     decltype(directions.begin()),
+                                     edge,
+                                     boost::forward_traversal_tag,
+                                     edge> {
+    const memory* g = nullptr;
     vector2 start = {0, 0};
 
-    edge_iterator(const grid_t& g, vector2 start, auto it) : g(&g), start(start), iterator_adaptor_(it) {
+    edge_iterator(const memory& g, vector2 start, base_type it)
+        : g(&g), start(start), iterator_adaptor_(it) {
         forward();
     }
 
-    static auto range(const grid_t& g, vector2 start) {
-        return std::pair{
-            edge_iterator{&g, start, directions.begin()},
-            edge_iterator{&g, start, directions.end()}
-        };
+    static auto range(const memory& g, vector2 start) {
+        return std::pair{edge_iterator{g, start, directions.begin()},
+                         edge_iterator{g, start, directions.end()}};
     }
 
-    edge dereference() const { return start + *base(); }
+    edge dereference() const { return {start, *base()}; }
     bool equal(const edge_iterator& other) const {
+        assert(g == other.g);
+        assert(start == other.start);
         return base() == other.base();
     }
     void increment() {
-        ++base();
+        ++base_reference();
         forward();
     }
 
    private:
     void forward() {
-        for (; base() != directions.end() and g->get(*start.pos + stage_to_dir()) == '#';
-             ++stage)
+        for (; base_reference() != directions.end() and
+               g->valid(start + *base_reference());
+             ++base_reference())
             ;
     }
 };
 
-auto out_edges(vector2 u, const grid_t& g) {
-    return std::pair{edge_iterator{g, u}, edge_iterator{}};
+auto out_edges(vector2 u, const memory& g) {
+    return edge_iterator::range(g, u);
 }
 
-auto out_degree(vector2 u, const grid_t& g) {
+auto out_degree(vector2 u, const memory& g) {
     auto edges = out_edges(u, g);
     return std::distance(edges.first, edges.second);
 }
@@ -135,32 +148,63 @@ auto out_degree(vector2 u, const grid_t& g) {
 
 namespace boost {
 template <>
-struct graph_traits<grid::grid_t> {
-    using vertex_descriptor = grid_t::vector2;
+struct graph_traits<day18::memory> {
+    using vertex_descriptor = grid::vector2;
     using edge_descriptor = day18::edge;
     using directed_category = undirected_tag;
     using edge_parallel_category = disallow_parallel_edge_tag;
     using traversal_category = incidence_graph_tag;
     using out_edge_iterator =
-        decltype(day18::out_edges(std::declval<day18::vector2>(),
-                                  std::declval<grid::grid_t>())
+        decltype(day18::out_edges(std::declval<vector2>(),
+                                  std::declval<day18::memory>())
                      .first);
     using degree_size_type =
-        decltype(day18::out_degree(std::declval<day18::vector2>(),
-                                   std::declval<grid::grid_t>()));
+        decltype(day18::out_degree(std::declval<vector2>(),
+                                   std::declval<day18::memory>()));
 
     static_assert(std::input_iterator<out_edge_iterator>);
 
-    static vertex_descriptor null_vertex() { return {{0, 0}, {0, 0}}; }
+    static vertex_descriptor null_vertex() { return {0, 0}; }
 };
 }  // namespace boost
 
-BOOST_CONCEPT_ASSERT((boost::concepts::Graph<grid::grid_t>));
-BOOST_CONCEPT_ASSERT((boost::concepts::IncidenceGraph<grid::grid_t>));
+BOOST_CONCEPT_ASSERT((boost::concepts::Graph<day18::memory>));
+BOOST_CONCEPT_ASSERT((boost::concepts::IncidenceGraph<day18::memory>));
 
 namespace day18 {
 
-i64 run_a(std::string_view s) {
+i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
+    auto g = memory{rows, cols};
+    auto it = s.begin();
+    bp::prefix_parse(it, s.end(), bp::repeat(falling_bytes)[bp::long_long > ',' > bp::long_long > -bp::eol], g.corrupted);
+
+    auto q = std::queue{vertex2{0,0}};
+    distances[{0,0}] = 0;
+    while (!q.empty()) {
+        const auto v = q.front();
+        q.pop();
+        auto dist = distances.find(q);
+        assert(dist != distances.end());
+
+        for (auto [edge_it, edge_end] = out_edges(v, maze); edge_it != edge_end;
+             ++edge_it) {
+            const auto e = *edge_it;
+            const auto w = target(e, maze);
+            auto it = distances.find(w);
+            if (it == distances.end() or it->second < dist->second) {
+
+            }
+            if (w_weight == std::numeric_limits<int>::max())
+                stack.push_back(w);
+            if (v_distance + e_weight < w_weight) {
+                w_weight = v_distance + e_weight;
+                predecessors.erase(w);
+            }
+            if (v_distance + e_weight <= w_weight)
+                predecessors.insert({w, v});
+        }
+    }
+
     return -1;
 }
 
@@ -172,7 +216,7 @@ TEST_CASE("day18a", "[day18]") {
     for (const auto& test : test_data) {
         const auto [s, expected, _] = test;
         if (expected) {
-            REQUIRE(run_a(s) == *expected);
+            REQUIRE(run_a(s, 7, 7, 12) == *expected);
         }
     }
 }
@@ -193,7 +237,7 @@ WEAK void entry() {
     const auto input = get_input(AOC_DAY);
     {
         auto t = SimpleTimer("Part A");
-        fmt::println("A: {}", run_a(input));
+        fmt::println("A: {}", run_a(input, 71, 71, 1024));
     }
     {
         auto t = SimpleTimer("Part B");
