@@ -1,17 +1,16 @@
 #include "aoc2024.h"
 
 #include <cmath>
-#include <list>
 #include <string_view>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include <fmt/core.h>
 
-#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/container/static_vector.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -46,7 +45,7 @@ const auto test_data = std::vector{
 <vv<<^^<<^^
 )",
      {},
-     105},
+     {}},
     {R"(##########
 #..O..O.O#
 #......O.#
@@ -201,53 +200,94 @@ auto simulate(auto grid, const auto& moves) {
     auto pos =
         *ranges::find_if(c, [&](vector2 p) { return grid.get(p) == ROBOT; });
     grid.get(pos) = EMPTY;
+    const auto fix_box_pos = [&](vector2 p) {
+        if (grid.get(p) == BOX_L)
+            return p;
+        assert(grid.get(p) == BOX_R);
+        return p + left;
+    };
     const auto make_move = [&](vector2 dir) {
         auto next_pos = pos + dir;
         auto& next_tile = grid.get(next_pos);
         if (next_tile == EMPTY) {
             pos = next_pos;
         } else if (is_box(next_tile)) {
-            auto boxes = std::vector<vector2>{};
-            auto boxes_for_level = std::vector<vector2>{};
-            auto blocked = false;
-            auto fix_box_pos = [&](vector2 p) {
-                if (grid.get(p) == BOX_L)
-                    return p;
-                assert(grid.get(p) == BOX_R);
-                return p + left;
+            const auto is_vertical = dir == up or dir == down;
+            const auto compare = [&](vector2 p, vector2 q) {
+                const auto [p_r,p_c] = p;
+                const auto [q_r,q_c] = q;
+                if (dir == up)
+                    return std::tie(p_r,p_c) < std::tie(q_r,q_c);
+                else if (dir == down)
+                    return std::tie(p_r,p_c) > std::tie(q_r,q_c);
+                else if (dir == left)
+                    return std::tie(p_c,p_r) < std::tie(q_c,q_r);
+                else
+                    return std::tie(p_c,p_r) > std::tie(q_c,q_r);
             };
-            boxes_for_level.push_back(fix_box_pos(next_pos));
-            while (not blocked and not boxes_for_level.empty()) {
-                auto boxes_for_next_level = std::vector<vector2>{};
-                for (auto box : boxes_for_level) {
-                    auto above_left_pos = box + dir;
-                    auto above_left = grid.get(above_left_pos);
-                    auto above_right_pos = (box + right) + dir;
-                    auto above_right = grid.get(above_right_pos);
-                    if (above_left == WALL or above_right == WALL) {
+            auto boxes = std::set<vector2, decltype(compare)>{compare};
+            auto found_boxes = boost::unordered_set<vector2>{fix_box_pos(next_pos)};
+            auto blocked = false;
+            while (not blocked and not found_boxes.empty()) {
+                const auto box_it = found_boxes.begin();
+                const auto box = *box_it;
+                found_boxes.erase(box_it);
+                assert(grid.get(box) == BOX_L);
+                if(not boxes.insert(box).second)
+                    continue;
+
+                auto tiles_to_check = boost::container::static_vector<vector2,2>{};
+                if (is_vertical) {
+                    tiles_to_check.push_back(box+dir);
+                    tiles_to_check.push_back(box+right+dir);
+                } else if (dir == left) {
+                    tiles_to_check.push_back(box+left);
+                } else {
+                    assert(dir == right);
+                    tiles_to_check.push_back(box+right+right);
+                }
+
+                for (const auto tile : tiles_to_check) {
+                    if (grid.get(tile) == WALL) {
                         blocked = true;
                         break;
+                    } else if (is_box(grid.get(tile))) {
+                        found_boxes.insert(fix_box_pos(tile));
                     }
-                    if (is_box(above_left))
-                        boxes_for_next_level.push_back(
-                            fix_box_pos(above_left_pos));
-                    if (above_left != BOX_L and is_box(above_right))
-                        boxes_for_next_level.push_back(
-                            fix_box_pos(above_right_pos));
-                    boxes.push_back(box);
                 }
-                boxes_for_level = std::move(boxes_for_next_level);
             }
 
             if (not blocked) {
-                for (auto box : boxes | rv::reverse) {
-                    grid.get(box + dir) = BOX_L;
-                    grid.get(box + right + dir) = BOX_R;
-                    grid.get(box) = EMPTY;
-                    grid.get(box + right) = EMPTY;
+                for (const auto box : boxes) {
+                    if (is_vertical) {
+                        grid.get(box + dir) = BOX_L;
+                        grid.get(box) = EMPTY;
+                        grid.get(box + right + dir) = BOX_R;
+                        grid.get(box + right) = EMPTY;
+                    } else if (dir == left) {
+                        grid.get(box + left) = BOX_L;
+                        grid.get(box) = BOX_R;
+                        grid.get(box + right) = EMPTY;
+                    } else {
+                        assert(dir == right);
+                        grid.get(box) = EMPTY;
+                        grid.get(box+right) = BOX_L;
+                        grid.get(box+right+right) = BOX_R;
+                    }
                 }
                 pos = pos + dir;
             }
+        }
+        constexpr bool show_grid = false;
+        if constexpr (show_grid) {
+            fmt::println("--------------");
+            assert(grid.get(pos) == EMPTY);
+            grid.get(pos) = ROBOT;
+            for (const auto row : grid.map) {
+                fmt::println("{}", row);
+            }
+            grid.get(pos) = EMPTY;
+            fmt::println("--------------");
         }
     };
     for (auto move :
