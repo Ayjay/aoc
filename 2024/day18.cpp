@@ -62,8 +62,8 @@ const auto test_data = std::vector{std::tuple<std::string_view,
     22, "6,1"}};
 
 struct memory {
-    int rows;
-    int cols;
+    i64 rows;
+    i64 cols;
     boost::unordered_set<vector2> corrupted;
     bool valid(vector2 pos) const {
         const auto [row, col] = pos;
@@ -71,7 +71,7 @@ struct memory {
                not corrupted.contains(pos);
     }
 
-    std::optional<int> path_length() const;
+    std::optional<i64> path_length() const;
 };
 
 struct edge {
@@ -177,7 +177,7 @@ namespace day18 {
 
 const auto byte_parser = *(bp::long_long > ',' > bp::long_long > -bp::eol);
 
-std::optional<int> memory::path_length() const {
+std::optional<i64> memory::path_length() const {
     auto q = std::queue<vector2>{};
     const auto start = vector2{0, 0};
     const auto end = vector2{rows - 1, cols - 1};
@@ -201,13 +201,13 @@ std::optional<int> memory::path_length() const {
     if (not predecessors.contains(end))
         return {};
 
-    auto dist = 0;
+    auto dist = 0ll;
     for (auto p = end; p != start; p = predecessors.at(p))
         ++dist;
     return dist;
 }
 
-i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
+i64 run_a(std::string_view s, i64 rows, i64 cols, i64 falling_bytes) {
     auto m = memory{rows, cols};
     auto it = s.begin();
     bp::prefix_parse(
@@ -218,7 +218,7 @@ i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
     return *m.path_length();
 }
 
-auto run_b(std::string_view s, int rows, int cols) {
+auto run_b(std::string_view s, i64 rows, i64 cols) {
     auto m = memory{rows, cols};
     auto falling_bytes = std::vector<vector2>{};
     bp::parse(s, *(bp::long_long > ',' > bp::long_long > -bp::eol),
