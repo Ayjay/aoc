@@ -31,9 +31,10 @@ using namespace grid;
 
 namespace day18 {
 using i64 = long long;
-const auto test_data = std::vector{
-    std::tuple<std::string_view, std::optional<i64>, std::optional<i64>>{
-        R"(5,4
+const auto test_data = std::vector{std::tuple<std::string_view,
+                                              std::optional<i64>,
+                                              std::optional<std::string_view>>{
+    R"(5,4
 4,2
 4,5
 3,0
@@ -58,8 +59,7 @@ const auto test_data = std::vector{
 0,5
 1,6
 2,0)",
-        22,
-        {}}};
+    22, "6,1"}};
 
 struct memory {
     int rows;
@@ -70,6 +70,8 @@ struct memory {
         return row >= 0 and row < rows and col >= 0 and col < cols and
                not corrupted.contains(pos);
     }
+
+    std::optional<int> path_length() const;
 };
 
 struct edge {
@@ -173,42 +175,64 @@ BOOST_CONCEPT_ASSERT((boost::concepts::IncidenceGraph<day18::memory>));
 
 namespace day18 {
 
-i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
-    auto g = memory{rows, cols};
-    auto it = s.begin();
-    bp::prefix_parse(
-        it, s.end(),
-        bp::repeat(
-            falling_bytes)[bp::long_long > ',' > bp::long_long > -bp::eol],
-        g.corrupted);
+const auto byte_parser = *(bp::long_long > ',' > bp::long_long > -bp::eol);
 
+std::optional<int> memory::path_length() const {
     auto q = std::queue<vector2>{};
-    q.push({0, 0});
+    const auto start = vector2{0, 0};
+    const auto end = vector2{rows - 1, cols - 1};
+    q.push(start);
     auto predecessors = boost::unordered_map<vector2, vector2>{};
     while (!q.empty()) {
         const auto v = q.front();
-        assert(g.valid(v));
+        assert(valid(v));
         q.pop();
 
-        for (auto [edge_it, edge_end] = out_edges(v, g); edge_it != edge_end;
-             ++edge_it) {
+        for (auto [edge_it, edge_end] = out_edges(v, *this);
+             edge_it != edge_end; ++edge_it) {
             const auto e = *edge_it;
-            const auto w = target(e, g);
-            assert(g.valid(w));
+            const auto w = target(e, *this);
+            assert(valid(w));
             if (predecessors.insert({w, v}).second)
                 q.push(w);
         }
     }
 
+    if (not predecessors.contains(end))
+        return {};
+
     auto dist = 0;
-    for (auto p = vector2{g.rows - 1, g.cols - 1}; p != vector2{0, 0};
-         p = predecessors.at(p))
+    for (auto p = end; p != start; p = predecessors.at(p))
         ++dist;
     return dist;
 }
 
-auto run_b(std::string_view s) {
-    return -1;
+i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
+    auto m = memory{rows, cols};
+    auto it = s.begin();
+    bp::prefix_parse(
+        it, s.end(),
+        bp::repeat(
+            falling_bytes)[bp::long_long > ',' > bp::long_long > -bp::eol],
+        m.corrupted);
+    return *m.path_length();
+}
+
+auto run_b(std::string_view s, int rows, int cols) {
+    auto m = memory{rows, cols};
+    auto falling_bytes = std::vector<vector2>{};
+    bp::parse(s, *(bp::long_long > ',' > bp::long_long > -bp::eol),
+              falling_bytes);
+    for (auto i : rv::iota(1)) {
+        auto i_bytes = falling_bytes | rv::take(i);
+        m.corrupted.clear();
+        m.corrupted.insert(i_bytes.begin(), i_bytes.end());
+        if (not m.path_length()) {
+            const auto [r, c] = falling_bytes[i - 1];
+            return fmt::format("{},{}", r, c);
+        }
+    }
+    std::unreachable();
 }
 
 TEST_CASE("day18a", "[day18]") {
@@ -224,7 +248,7 @@ TEST_CASE("day18b", "[day18]") {
     for (const auto& test : test_data) {
         const auto [s, _, expected] = test;
         if (expected) {
-            REQUIRE(run_b(s) == *expected);
+            REQUIRE(run_b(s, 7, 7) == *expected);
         }
     }
 }
@@ -240,6 +264,6 @@ WEAK void entry() {
     }
     {
         auto t = SimpleTimer("Part B");
-        fmt::println("B: {}", run_b(input));
+        fmt::println("B: {}", run_b(input, 71, 71));
     }
 }
