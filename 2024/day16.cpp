@@ -250,7 +250,7 @@ auto find_paths(std::string_view s) {
 }
 
 i64 run_a(std::string_view s) {
-    const auto [_, _, end, _, distances] = find_paths(s);
+    const auto [_a, _b, end, _c, distances] = find_paths(s);
     auto goal_vertices =
         directions |
         rv::transform([&](vector2 dir) { return vertex{end, dir}; }) |
