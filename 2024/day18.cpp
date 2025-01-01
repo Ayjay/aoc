@@ -2,11 +2,11 @@
 
 #include <cmath>
 #include <iterator>
+#include <queue>
 #include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <queue>
 
 #include <fmt/core.h>
 #include <fmt/ostream.h>
@@ -129,7 +129,7 @@ struct edge_iterator
    private:
     void forward() {
         for (; base_reference() != directions.end() and
-               g->valid(start + *base_reference());
+               not g->valid(start + *base_reference());
              ++base_reference())
             ;
     }
@@ -176,36 +176,35 @@ namespace day18 {
 i64 run_a(std::string_view s, int rows, int cols, int falling_bytes) {
     auto g = memory{rows, cols};
     auto it = s.begin();
-    bp::prefix_parse(it, s.end(), bp::repeat(falling_bytes)[bp::long_long > ',' > bp::long_long > -bp::eol], g.corrupted);
+    bp::prefix_parse(
+        it, s.end(),
+        bp::repeat(
+            falling_bytes)[bp::long_long > ',' > bp::long_long > -bp::eol],
+        g.corrupted);
 
-    auto q = std::queue{vertex2{0,0}};
-    distances[{0,0}] = 0;
+    auto q = std::queue<vector2>{};
+    q.push({0, 0});
+    auto predecessors = boost::unordered_map<vector2, vector2>{};
     while (!q.empty()) {
         const auto v = q.front();
+        assert(g.valid(v));
         q.pop();
-        auto dist = distances.find(q);
-        assert(dist != distances.end());
 
-        for (auto [edge_it, edge_end] = out_edges(v, maze); edge_it != edge_end;
+        for (auto [edge_it, edge_end] = out_edges(v, g); edge_it != edge_end;
              ++edge_it) {
             const auto e = *edge_it;
-            const auto w = target(e, maze);
-            auto it = distances.find(w);
-            if (it == distances.end() or it->second < dist->second) {
-
-            }
-            if (w_weight == std::numeric_limits<int>::max())
-                stack.push_back(w);
-            if (v_distance + e_weight < w_weight) {
-                w_weight = v_distance + e_weight;
-                predecessors.erase(w);
-            }
-            if (v_distance + e_weight <= w_weight)
-                predecessors.insert({w, v});
+            const auto w = target(e, g);
+            assert(g.valid(w));
+            if (predecessors.insert({w, v}).second)
+                q.push(w);
         }
     }
 
-    return -1;
+    auto dist = 0;
+    for (auto p = vector2{g.rows - 1, g.cols - 1}; p != vector2{0, 0};
+         p = predecessors.at(p))
+        ++dist;
+    return dist;
 }
 
 auto run_b(std::string_view s) {
