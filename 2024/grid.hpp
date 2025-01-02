@@ -112,6 +112,12 @@ class grid_t {
     auto cell_getter() const {
         return [&](vector2 pos) -> char { return get(pos); };
     }
+
+    vector2 find_single(char c) const {
+        const auto cs = cells();
+        return *ranges::find(cs, c, cell_getter());
+    }
+
 };
 
 }  // namespace grid
