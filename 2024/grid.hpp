@@ -65,6 +65,12 @@ inline auto distance(vector2 a, vector2 b) {
     return std::sqrt(std::pow(b_r - a_r, 2) + std::pow(b_c - a_c, 2));
 }
 
+inline long long manhattan_distance(vector2 a, vector2 b) {
+    const auto [a_r, a_c] = a;
+    const auto [b_r, b_c] = b;
+    return std::abs(b_r - a_r) + std::abs(b_c - a_c);
+}
+
 inline auto indexer(const auto& map) {
     return [&](const vector2 p) {
         const auto [row, col] = p;
@@ -117,7 +123,6 @@ class grid_t {
         const auto cs = cells();
         return *ranges::find(cs, c, cell_getter());
     }
-
 };
 
 }  // namespace grid
