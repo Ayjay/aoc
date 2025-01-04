@@ -80,14 +80,14 @@ i64 run_a(std::string_view s) {
     const auto [towels, designs] = parse(s);
     const auto possible = [&](std::string_view design) -> bool {
         if constexpr (debug_print) fmt::print("Checking '{}'...", design);
-        auto seen = boost::unordered_set<std::string_view::iterator>{};
+        auto seen = boost::unordered_set<const char*>{};
         auto s = std::vector<std::string_view::iterator>{};
         s.push_back(design.begin());
 
         while (not s.empty()) {
             auto it = s.back();
             s.pop_back();
-            if (not seen.insert(it).second)
+            if (not seen.insert(&*it).second)
                 continue;
             auto n = towels.get();
 
@@ -116,10 +116,10 @@ auto run_b(std::string_view s) {
     const auto [towels, designs] = parse(s);
     const auto possible = [&](std::string_view design) -> i64 {
         if constexpr (debug_print) fmt::print("Checking '{}'...", design);
-        auto seen = boost::unordered_map<std::string_view::iterator, i64>{};
+        auto seen = boost::unordered_map<const char*, i64>{};
 
         const auto check = [&](this auto&& self, std::string_view::iterator it) {
-            auto cached = seen.find(it);
+            auto cached = seen.find(&*it);
             if (cached != seen.end())
                 return cached->second;
 
@@ -140,7 +140,7 @@ auto run_b(std::string_view s) {
             if (it == design.end() and n->terminal) {
                 ++count;
             }
-            seen[start] = count;
+            seen[&*start] = count;
             return count;
         };
 

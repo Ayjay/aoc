@@ -179,7 +179,7 @@ const auto byte_parser = *(bp::long_long > ',' > bp::long_long > -bp::eol);
 
 std::optional<i64> memory::path_length() const {
     auto q = std::queue<vector2>{};
-    const auto start = vector2{0, 0};
+    const auto start = vector2{i64{}, i64{}};
     const auto end = vector2{rows - 1, cols - 1};
     q.push(start);
     auto predecessors = boost::unordered_map<vector2, vector2>{};
