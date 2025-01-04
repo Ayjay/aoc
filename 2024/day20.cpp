@@ -1,9 +1,6 @@
 #include "aoc2024.h"
 
-#include <execution>
-#include <iterator>
-#include <memory>
-#include <queue>
+#include <map>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -13,11 +10,10 @@
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
 
-#include <boost/container/static_vector.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/astar_search.hpp>
+#include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/visitors.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -47,170 +43,119 @@ const auto test_data =
 struct cheat {
     vector2 pos;
     vector2 end;
+    friend std::ostream& operator<<(std::ostream& os, const cheat& c) {
+        return os << fmt::format("[{}-{}]", c.pos, c.end);
+    }
 };
 
-const auto get_cheats = [](const grid_t& g) {
-    auto cells = g.cells();
-    const auto is_valid = [&](vector2 p) {
-        auto c = g.checked_get(p);
-        return c and c != '#';
-    };
-    const auto cell_cheats = [is_valid](vector2 v) {
-        const auto make_cheat =
-            [v, is_valid](
-                vector2 dir) -> boost::container::static_vector<cheat, 1> {
-            if (not is_valid(v + dir) and is_valid(v + dir + dir))
-                return {cheat{v, v + dir + dir}};
-            else if (not is_valid(v + dir) and not is_valid(v + dir + dir) and
-                     is_valid(v + dir + dir + dir))
-                return {cheat{v, v + dir + dir + dir}};
-            else
-                return {};
-        };
-        static auto dirs = std::array{right, down};
-        return dirs | rv::for_each(make_cheat);
-    };
-    return cells | rv::filter(is_valid) | rv::for_each(cell_cheats);
-};
+}  // namespace day20
+
+template <>
+struct fmt::formatter<day20::cheat> : ostream_formatter {};
+
+namespace day20 {
 
 namespace detail {
 using namespace boost;
-using Graph = adjacency_list<vecS,
-                             vecS,
-                             undirectedS,
-                             property<vertex_name_t, vector2>,
-                             property<edge_weight_t, i64>>;
+using Graph = adjacency_list<vecS, vecS, undirectedS>;
 }  // namespace detail
 using detail::Graph;
-
-struct found_goal {};  // exception for termination
-
-// visitor that terminates when we find the goal
-template <class Vertex>
-class astar_goal_visitor : public boost::default_astar_visitor {
-   public:
-    explicit astar_goal_visitor(Vertex goal) : m_goal(goal) {}
-    template <class Graph>
-    void examine_vertex(Vertex u, Graph& g) {
-        if (u == m_goal)
-            throw found_goal();
-    }
-
-   private:
-    Vertex m_goal;
-};
 
 auto make_graph(const grid_t& g) {
     const auto is_valid = [&](vector2 v) { return g.get(v) != '#'; };
     Graph graph;
-    auto vertex_name = get(boost::vertex_name, graph);
-    auto edge_weights = get(boost::edge_weight, graph);
     auto vertices = boost::unordered_map<vector2, Graph::vertex_descriptor>{};
     for (const auto c : g.cells()) {
         if (is_valid(c)) {
             auto u = add_vertex(graph);
-            vertex_name[u] = c;
             vertices[c] = u;
         }
     }
 
     for (const auto [u, v] : vertices) {
-        if (is_valid(u + right)) {
-            const auto [edge, inserted] =
-                add_edge(v, vertices.at(u + right), graph);
-            edge_weights[edge] = 1;
-        }
-        if (is_valid(u + down)) {
-            const auto [edge, inserted] =
-                add_edge(v, vertices.at(u + down), graph);
-            edge_weights[edge] = 1;
-        }
+        if (is_valid(u + right))
+            add_edge(v, vertices.at(u + right), graph);
+        if (is_valid(u + down))
+            add_edge(v, vertices.at(u + down), graph);
     }
 
     return std::tuple{graph, vertices};
 }
 
-auto time(
-    Graph& graph,
-    const boost::unordered_map<vector2, Graph::vertex_descriptor>& vertices,
-    vector2 start,
-    vector2 end,
-    std::optional<cheat> c) {
-    auto edge = Graph::edge_descriptor{};
-    if (c) {
-        bool inserted;
-        std::tie(edge, inserted) =
-            add_edge(vertices.at(c->pos), vertices.at(c->end), graph);
-        get(boost::edge_weight, graph)[edge] =
-            manhattan_distance(c->pos, c->end);
-    }
-
-    auto d = std::vector<i64>(num_vertices(graph));
-    auto vertex_name = get(boost::vertex_name, graph);
-
-    const auto heuristic = [&](Graph::vertex_descriptor p) {
-        return distance(vertex_name[p], end);
-    };
-
-    try {
-        boost::astar_search(
-            graph, vertices.at(start), heuristic,
-            boost::distance_map(boost::make_iterator_property_map(
-                                    d.begin(), get(boost::vertex_index, graph)))
-                .visitor(astar_goal_visitor<Graph::vertex_descriptor>{
-                    vertices.at(end)}));
-    } catch (found_goal) {
-    }
-
-    if (c) {
-        remove_edge(edge, graph);
-    }
-
-    return d[vertices.at(end)];
-}
-
-auto time(const grid_t& g, std::optional<cheat> c) {
+auto solve(const grid_t& g, i64 max_cheat_length) {
     auto [graph, vertices] = make_graph(g);
     const auto start = g.find_single('S');
     const auto end = g.find_single('E');
-    return time(graph, vertices, start, end, c);
+
+    auto start_d = std::vector<i64>(num_vertices(graph));
+    auto end_d = std::vector<i64>(num_vertices(graph));
+
+    boost::breadth_first_search(
+        graph, vertices.at(start),
+        boost::visitor(boost::make_bfs_visitor(
+            boost::record_distances(start_d.data(), boost::on_tree_edge()))));
+
+    boost::breadth_first_search(
+        graph, vertices.at(end),
+        boost::visitor(boost::make_bfs_visitor(
+            boost::record_distances(end_d.data(), boost::on_tree_edge()))));
+
+    const auto base_distance = start_d[vertices.at(end)];
+
+    const auto time_save = [&](cheat c) {
+        const auto [c_pos_r, c_pos_c] = c.pos;
+        const auto t = start_d[vertices.at(c.pos)] +
+                       manhattan_distance(c.pos, c.end) +
+                       end_d[vertices.at(c.end)];
+        return t < base_distance ? base_distance - t : 0;
+    };
+
+    const auto is_valid = [&](vector2 p) {
+        auto c = g.checked_get(p);
+        return c and c != '#';
+    };
+
+    const auto cheats = [&](vector2 v) {
+        const auto [v_r, v_c] = v;
+        const auto to_cheat = [=](auto u) { return cheat{v, u}; };
+        const auto make_column = [=](auto row) {
+            auto cols = max_cheat_length - std::abs(row);
+            return rv::iota(-cols, cols + 1) | rv::transform([=](auto col) {
+                       return vector2{v_r + row, v_c + col};
+                   });
+        };
+        return rv::iota(-max_cheat_length, max_cheat_length + 1) |
+               rv::for_each(make_column) | rv::filter(is_valid) |
+               rv::transform(to_cheat);
+    };
+
+    auto cells = g.cells();
+    auto counts = std::map<i64, i64>{};
+    for (auto t : cells | rv::filter(is_valid) | rv::for_each(cheats) |
+                      rv::transform(time_save)) {
+        counts[t]++;
+    }
+
+    return counts;
 }
 
-TEST_CASE("no-cheat", "[day20]") {
-    auto g = grid_t{test_data};
-    REQUIRE(time(g, {}) == 84);
-}
-
-TEST_CASE("specific cheat", "[day20]") {
-    const auto g = grid_t{test_data};
-    const auto t = time(g, cheat{{1, 7}, {1, 10}});
-    REQUIRE(t == 72);
+i64 counts_gt(const auto& m, i64 threshold) {
+    return reduce(ranges::subrange(m.lower_bound(threshold), m.end()) |
+                  rv::values);
 }
 
 i64 run_a(std::string_view s) {
-    const auto g = grid_t{s};
-
-    auto cheats = get_cheats(g);
-    auto [graph, vertices] = make_graph(g);
-    const auto start = g.find_single('S');
-    const auto end = g.find_single('E');
-    const auto base_time = time(graph, vertices, start, end, {});
-    return ranges::count_if(cheats, [&](cheat c) {
-        return base_time - time(graph, vertices, start, end, c) >= 100;
-    });
+    const auto counts = solve(grid_t{s}, 2);
+    return counts_gt(counts, 100);
 }
 
 auto run_b(std::string_view s) {
-    return -1;
+    const auto counts = solve(grid_t{s}, 20);
+    return counts_gt(counts, 100);
 }
 
 TEST_CASE("day20a", "[day20]") {
-    auto m = grid_t{test_data};
-    const auto base_time = time(m, {});
-    auto cheats = get_cheats(m);
-    auto counts = boost::unordered_map<i64, i64>{};
-    for (auto c : cheats)
-        ++counts[base_time - time(m, c)];
+    auto counts = solve(grid_t(test_data), 2);
 
     REQUIRE(counts[2] == 14);
     REQUIRE(counts[4] == 14);
@@ -225,7 +170,24 @@ TEST_CASE("day20a", "[day20]") {
     REQUIRE(counts[64] == 1);
 }
 
-TEST_CASE("day20b", "[day20]") {}
+TEST_CASE("day20b", "[day20]") {
+    auto counts = solve(grid_t(test_data), 20);
+
+    REQUIRE(counts[50] == 32);
+    REQUIRE(counts[52] == 31);
+    REQUIRE(counts[54] == 29);
+    REQUIRE(counts[56] == 39);
+    REQUIRE(counts[58] == 25);
+    REQUIRE(counts[60] == 23);
+    REQUIRE(counts[62] == 20);
+    REQUIRE(counts[64] == 19);
+    REQUIRE(counts[66] == 12);
+    REQUIRE(counts[68] == 14);
+    REQUIRE(counts[70] == 12);
+    REQUIRE(counts[72] == 22);
+    REQUIRE(counts[74] == 4);
+    REQUIRE(counts[76] == 3);
+}
 
 }  // namespace day20
 

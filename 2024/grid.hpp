@@ -81,8 +81,8 @@ inline auto indexer(const auto& map) {
 class grid_t {
    public:
     std::vector<std::string> map;
-    int rows;
-    int cols;
+    long long rows;
+    long long cols;
 
     explicit grid_t(std::string_view s)
         : map(get_lines<std::string>(s)),
