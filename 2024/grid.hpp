@@ -7,7 +7,7 @@
 #include "aoc2024.h"
 
 namespace grid {
-using vector2 = std::tuple<int, int>;
+using vector2 = std::tuple<long long, long long>;
 
 constexpr inline auto up = vector2{-1, 0};
 constexpr inline auto down = vector2{1, 0};
