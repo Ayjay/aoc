@@ -77,12 +77,43 @@ i64 run_a(std::string_view s) {
     return ranges::count_if(triplets, has_t);
 }
 
-i64 run_b(std::string_view s) {
-    return -1;
+std::string run_b(std::string_view s) {
+    const auto [g, vertices] = make_graph(s);
+    auto networks =
+        boost::unordered_set<boost::unordered_set<Graph::vertex_descriptor>>{};
+
+    const auto edge_exists = [&](auto v, auto u) {
+        auto [adj, adj_end] = adjacent_vertices(v, g);
+        return ranges::contains(ranges::subrange(adj, adj_end), u);
+    };
+
+    for (auto [v_it, v_end] = boost::vertices(g); v_it != v_end; ++v_it) {
+        auto [a_it, a_end] = adjacent_vertices(*v_it, g);
+        auto adjacent =
+            boost::unordered_set<Graph::vertex_descriptor>{a_it, a_end};
+        const auto create_network =
+            [&](auto a_v) -> boost::unordered_set<Graph::vertex_descriptor> {
+            auto network = boost::unordered_set<Graph::vertex_descriptor>{};
+            network.insert(*v_it);
+            network.insert(a_v);
+            for (auto u : adjacent) {
+                if (u == v)
+                    continue;
+                if (ranges::all_of(network,
+                                   [&](auto w) { return edge_exists(u, w); }))
+            }
+        };
+        for (auto [a_it, a_end] = adjacent_vertices(*v_it, g); a_it != a_end;
+             ++a_it) {
+            networks.insert(create_network(*v_it));
+        }
+    }
+
+    return *ranges::max_element(networks, std::less{},
+                                [](const auto& c) { return c.size(); });
 }
 
-TEST_CASE("day23a", "[day23]") {
-    const auto test_data = R"(kh-tc
+const auto test_data = R"(kh-tc
 qp-kh
 de-cg
 ka-co
@@ -115,10 +146,13 @@ wh-qp
 tb-vc
 td-yn)";
 
+TEST_CASE("day23a", "[day23]") {
     REQUIRE(run_a(test_data) == 7);
 }
 
-TEST_CASE("day23b", "[day23]") {}
+TEST_CASE("day23b", "[day23]") {
+    REQUIRE(run_b(test_data) == "co,de,ka,ta");
+}
 }  // namespace day23
 
 WEAK void entry() {
