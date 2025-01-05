@@ -42,6 +42,8 @@ namespace hana = boost::hana;
 #include <boost/parser/parser.hpp>
 namespace bp = boost::parser;
 
+using i64 = long long;
+
 struct reduce_t {
     auto operator()(auto&& r, auto&& op) const {
         assert(ranges::distance(r) > 0);
