@@ -15,6 +15,8 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
+#include <range/v3/action.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "simple_timer.hpp"
@@ -97,11 +99,14 @@ std::string run_b(std::string_view s) {
             network.insert(*v_it);
             network.insert(a_v);
             for (auto u : adjacent) {
-                if (u == v)
+                if (u == a_v)
                     continue;
                 if (ranges::all_of(network,
-                                   [&](auto w) { return edge_exists(u, w); }))
+                                   [&](auto w) { return edge_exists(u, w); })) {
+                    network.insert(u);
+                }
             }
+            return network;
         };
         for (auto [a_it, a_end] = adjacent_vertices(*v_it, g); a_it != a_end;
              ++a_it) {
@@ -109,8 +114,15 @@ std::string run_b(std::string_view s) {
         }
     }
 
-    return *ranges::max_element(networks, std::less{},
-                                [](const auto& c) { return c.size(); });
+    const auto get_name = [vertex_name = get(boost::vertex_name, g)](auto v) {
+        return vertex_name[v];
+    };
+
+    auto best = *ranges::max_element(networks, std::less{},
+                                     [](const auto& c) { return c.size(); }) |
+                rv::transform(get_name) | ranges::to<std::vector> |
+                ranges::actions::sort;
+    return fmt::format("{}", fmt::join(best, ","));
 }
 
 const auto test_data = R"(kh-tc
