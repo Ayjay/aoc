@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <string_view>
 #include <tuple>
@@ -21,6 +22,18 @@ constexpr inline std::string_view dir_to_string(vector2 dir) {
     if (dir == left)
         return "left";
     return "right";
+}
+constexpr inline char dir_to_arrow(vector2 dir) {
+    if (dir == up)
+        return '^';
+    else if (dir == down)
+        return 'v';
+    else if (dir == left)
+        return '<';
+    else {
+        assert(dir == right);
+        return '>';
+    }
 }
 
 constexpr inline auto directions = std::array{up, down, left, right};
@@ -107,9 +120,13 @@ class grid_t {
         return map[row][col];
     }
 
-    std::optional<char> checked_get(vector2 p) const {
+    bool on_map(vector2 p) const {
         const auto [row, col] = p;
-        if (row >= 0 and row < rows and col >= 0 and col < cols)
+        return row >= 0 and row < rows and col >= 0 and col < cols;
+    };
+
+    std::optional<char> checked_get(vector2 p) const {
+        if (on_map(p))
             return get(p);
         else
             return {};
