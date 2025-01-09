@@ -2,11 +2,12 @@
 
 #include <cmath>
 #include <iterator>
+#include <queue>
+#include <set>
 #include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <queue>
 
 #include <fmt/core.h>
 #include <fmt/ostream.h>
@@ -224,10 +225,14 @@ auto find_paths(std::string_view s) {
             .first->second;
     };
 
-    auto q = std::queue<vertex>{};
+    auto comp = [&](vertex v, vertex u) {
+        return distance_prop_fn(u) < distance_prop_fn(v);
+    };
+    auto q =
+        std::priority_queue<vertex, std::vector<vertex>, decltype(comp)>(comp);
     q.push(start_vertex);
     while (!q.empty()) {
-        const auto v = q.front();
+        const auto v = q.top();
         q.pop();
 
         auto& v_distance = distance_prop_fn(v);
@@ -291,10 +296,13 @@ TEST_CASE("find_all_minimal", "[day16]") {
                 std::vector{1, 1, 2, 3}) == std::vector{1, 1});
 }
 
+constexpr bool debug_print = false;
+
 auto run_b(std::string_view s) {
     const auto [_, start, end, predecessors, distances] = find_paths(s);
 
-    fmt::println("{}", fmt::join(predecessors, "\n"));
+    if constexpr (debug_print)
+        fmt::println("{}", fmt::join(predecessors, "\n"));
 
     const auto goal_distance = [&](vertex v) {
         auto it = distances.find(v);
@@ -322,21 +330,44 @@ auto run_b(std::string_view s) {
         }
     }
     const auto get_pos = [](vertex v) { return v.pos; };
-    auto shortest_tiles = shortest_vertices | rv::transform(get_pos) | ranges::to<boost::unordered_set>;
+    auto shortest_tiles = shortest_vertices | rv::transform(get_pos) |
+                          ranges::to<boost::unordered_set>;
     shortest_tiles.insert(start);
 
-    const auto maze = grid_t{s};
-    for (auto r : rv::iota(0,maze.rows)) {
-        for (auto c : rv::iota(0,maze.cols)) {
-            if (shortest_tiles.contains(vector2{r,c})) {
-                std::cout << 'O';
-            } else {
-                std::cout << maze.map[r][c];
+    if constexpr (debug_print) {
+        const auto maze = grid_t{s};
+        for (auto r : rv::iota(0, maze.rows)) {
+            for (auto c : rv::iota(0, maze.cols)) {
+                if (shortest_tiles.contains(vector2{r, c})) {
+                    std::cout << 'O';
+                } else {
+                    std::cout << maze.map[r][c];
+                }
             }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
     return shortest_tiles.size();
+}
+
+TEST_CASE("two facings", "[day16]") {
+    const auto test_data = R"(#####
+#   #
+#S#E#
+#   #
+#####)";
+    REQUIRE(run_b(test_data) == 8);
+}
+
+TEST_CASE("reddit example", "[day16]") {
+    const auto test_data = R"(#######
+###..E#
+###..##
+##....#
+##..###
+#S.####
+#######)";
+    REQUIRE(run_b(test_data) == 12);
 }
 
 TEST_CASE("day16a", "[day16]") {
