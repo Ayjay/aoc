@@ -38,18 +38,15 @@ auto run_a(std::string_view s) {
     auto facing = up;
     auto visited = boost::unordered_set{pos};
     while (true) {
-        for (auto _ : rv::iota(0, 2)) {
-            auto next = pos + facing;
-            auto next_c = map.checked_get(next);
-            if (not next_c)
-                return visited.size();
-            if (*next_c == '#') {
-                facing = turn_right(facing);
-                continue;
-            }
+        auto next = pos + facing;
+        auto next_c = map.checked_get(next);
+        if (not next_c)
+            return visited.size();
+        if (*next_c == '#') {
+            facing = turn_right(facing);
+        } else {
             pos = next;
             visited.insert(pos);
-            break;
         }
     }
 }
