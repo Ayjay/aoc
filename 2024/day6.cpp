@@ -61,10 +61,18 @@ static auto run_b(std::string_view s) {
 
     auto cells = map.cells();
     auto pos = *ranges::find(cells, '^', map.cell_getter());
+    map.get(pos) = '.';
     auto facing = up;
     auto visited = boost::unordered_map<vector2, i64>{std::pair{pos, i64{}}};
     auto corners = 0;
-    auto circuit_positions = i64{};
+    auto circuit_positions = boost::unordered_set<vector2>{};
+
+    const auto shoot_cornerline_backwards = [&] {
+        auto behind = turn_right(turn_right(facing));
+        for (auto p = pos + behind; map.checked_get(p) == '.'; p = p + behind)
+            visited[p] = corners;
+    };
+    shoot_cornerline_backwards();
     while (true) {
         for (auto _ : rv::iota(0, 2)) {
             if constexpr (debug_print) {
@@ -88,10 +96,12 @@ static auto run_b(std::string_view s) {
                 const auto [next_row, next_col] = next;
                 auto next_c = map.checked_get(next);
                 if (not next_c)
-                    return circuit_positions;
+                    return circuit_positions.size();
                 if (*next_c == '#') {
                     facing = turn_right(facing);
                     ++corners;
+                    visited[pos] = corners;
+                    shoot_cornerline_backwards();
                     continue;
                 }
                 pos = next;
@@ -102,7 +112,7 @@ static auto run_b(std::string_view s) {
                     const auto next = pos + facing;
                     if (it->second == corners - 3 and
                         map.checked_get(next) == '.')
-                        ++circuit_positions;
+                        circuit_positions.insert(next);
                     it->second = corners;
                 } else {
                     visited[pos] = corners;
