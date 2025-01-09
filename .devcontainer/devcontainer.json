@@ -5,22 +5,15 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-
 	"containerEnv": {
 		"AOC_SESSION_TOKEN": "${localEnv:AOC_SESSION_TOKEN}"
 	},
-
-
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
-
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "echo 'set auto-load local-gdbinit on\nset auto-load safe-path /' > /home/vscode/.gdbinit",
-
 	// Configure tool-specific properties.
 	// "customizations": {},
 	"customizations": {
@@ -33,44 +26,62 @@
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
 				},
-				"testMate.cpp.debug.configTemplate": {
-					"type": "cppvsdbg",
-					"linux": {
-						"type": "cppdbg",
-						"MIMode": "gdb"
-					},
-					"darwin": {
-						"type": "cppdbg",
-						"MIMode": "lldb"
-					},
-					"win32": {
-						"type": "cppvsdbg"
-					},
-					"program": "${exec}",
-					"args": "${argsArray}",
-					"cwd": "${cwd}",
-					"env": "${envObj}",
-					"environment": "${envObjArray}",
-					"sourceFileMap": "${sourceFileMapObj}",
-					"setupCommands": [
-						{
-							"description": "Enable pretty-printing for gdb",
-							"text": "-enable-pretty-printing",
-							"ignoreFailures": true
-						},
-						{
-							"description": "Set Disassembly Flavor to Intel",
-							"text": "-gdb-set disassembly-flavor intel",
-							"ignoreFailures": true
+				"testMate.cpp": {
+					"debug": {
+						"configTemplate": {
+							"type": "cppvsdbg",
+							"linux": {
+								"type": "cppdbg",
+								"MIMode": "gdb"
+							},
+							"darwin": {
+								"type": "cppdbg",
+								"MIMode": "lldb"
+							},
+							"win32": {
+								"type": "cppvsdbg"
+							},
+							"program": "${exec}",
+							"args": "${argsArray}",
+							"cwd": "${cwd}",
+							"env": "${envObj}",
+							"environment": "${envObjArray}",
+							"sourceFileMap": "${sourceFileMapObj}",
+							"setupCommands": [
+								{
+									"description": "Enable pretty-printing for gdb",
+									"text": "-enable-pretty-printing",
+									"ignoreFailures": true
+								},
+								{
+									"description": "Set Disassembly Flavor to Intel",
+									"text": "-gdb-set disassembly-flavor intel",
+									"ignoreFailures": true
+								}
+							]
 						}
-					]
+					},
+					"discovery.loadOnStartup": true,
+					"test": {
+						"runtimeLimit": 5,
+						"advancedExecutables": [
+							{
+								"pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
+								"catch2": {
+									"testGrouping": {
+										"groupByTags": true
+									}
+								}
+							}
+						]
+					}
 				}
 			}
 		}
 	},
-
-	"capAdd": ["SYS_PTRACE"]
-
+	"capAdd": [
+		"SYS_PTRACE"
+	]
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }

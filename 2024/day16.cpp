@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <queue>
 
 #include <fmt/core.h>
 #include <fmt/ostream.h>
@@ -223,10 +224,11 @@ auto find_paths(std::string_view s) {
             .first->second;
     };
 
-    auto stack = std::vector{start_vertex};
-    while (!stack.empty()) {
-        const auto v = stack.back();
-        stack.pop_back();
+    auto q = std::queue<vertex>{};
+    q.push(start_vertex);
+    while (!q.empty()) {
+        const auto v = q.front();
+        q.pop();
 
         auto& v_distance = distance_prop_fn(v);
         for (auto [edge_it, edge_end] = out_edges(v, maze); edge_it != edge_end;
@@ -236,7 +238,7 @@ auto find_paths(std::string_view s) {
             const auto e_weight = edge_weight(e);
             auto& w_weight = distance_prop_fn(w);
             if (w_weight == std::numeric_limits<int>::max())
-                stack.push_back(w);
+                q.push(w);
             if (v_distance + e_weight < w_weight) {
                 w_weight = v_distance + e_weight;
                 predecessors.erase(w);
@@ -303,13 +305,13 @@ auto run_b(std::string_view s) {
         directions |
             rv::transform([&](vector2 dir) { return vertex{end, dir}; }),
         goal_distance);
-    auto shortest_tiles = boost::unordered_set<vertex>{};
+    auto shortest_vertices = boost::unordered_set<vertex>{};
     auto shortest_stack = goal_vertices;
     while (not shortest_stack.empty()) {
         const auto v = shortest_stack.back();
         shortest_stack.pop_back();
 
-        if (v != vertex{start, right} and shortest_tiles.insert(v).second) {
+        if (v != vertex{start, right} and shortest_vertices.insert(v).second) {
             const auto predec = predecessors.equal_range(v);
             const auto predec_range =
                 ranges::subrange{predec.first, predec.second};
@@ -319,6 +321,21 @@ auto run_b(std::string_view s) {
                                   predec_values.end());
         }
     }
+    const auto get_pos = [](vertex v) { return v.pos; };
+    auto shortest_tiles = shortest_vertices | rv::transform(get_pos) | ranges::to<boost::unordered_set>;
+    shortest_tiles.insert(start);
+
+    const auto maze = grid_t{s};
+    for (auto r : rv::iota(0,maze.rows)) {
+        for (auto c : rv::iota(0,maze.cols)) {
+            if (shortest_tiles.contains(vector2{r,c})) {
+                std::cout << 'O';
+            } else {
+                std::cout << maze.map[r][c];
+            }
+        }
+        std::cout << std::endl;
+    }
     return shortest_tiles.size();
 }
 
@@ -326,7 +343,7 @@ TEST_CASE("day16a", "[day16]") {
     for (const auto& test : test_data) {
         const auto [s, expected, _] = test;
         if (expected) {
-            REQUIRE(run_a(s) == *expected);
+            CHECK(run_a(s) == *expected);
         }
     }
 }
@@ -335,7 +352,7 @@ TEST_CASE("day16b", "[day16]") {
     for (const auto& test : test_data) {
         const auto [s, _, expected] = test;
         if (expected) {
-            REQUIRE(run_b(s) == *expected);
+            CHECK(run_b(s) == *expected);
         }
     }
 }
