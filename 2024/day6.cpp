@@ -14,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "grid.hpp"
+#include "simple_timer.hpp"
 
 namespace day6 {
 using namespace grid;
@@ -53,71 +54,36 @@ auto run_a(std::string_view s) {
 
 constexpr bool debug_print = true;
 
+auto walk(const grid_t& map, vector2 start) {
+    auto visited =
+        boost::unordered_map<vector2, boost::unordered_set<vector2>>{};
+    auto pos = start;
+    auto facing = up;
+    auto next = std::optional<char>{};
+    while ((next = map.checked_get(pos + facing)) and
+           visited[pos].insert(facing).second) {
+        if (*next == '#')
+            facing = turn_right(facing);
+        else
+            pos = pos + facing;
+    }
+    return std::tuple{visited, visited[pos].contains(facing)};
+}
+
 static auto run_b(std::string_view s) {
     auto map = grid_t{s};
-
     auto cells = map.cells();
-    auto pos = *ranges::find(cells, '^', map.cell_getter());
-    map.get(pos) = '.';
-    auto facing = up;
-    auto visited = boost::unordered_map<vector2, boost::unordered_set<vector2>>{
-        {pos, {facing}}};
-    auto circuit_positions = boost::unordered_set<vector2>{};
-
-    const auto print_map = [&] {
-        std::cout << std::endl;
-        for (auto r : rv::iota(i64{}, map.rows)) {
-            for (auto c : rv::iota(i64{}, map.cols)) {
-                auto p = vector2{r, c};
-                if (circuit_positions.contains(p))
-                    std::cout << 'O';
-                else if (p == pos)
-                    std::cout << dir_to_arrow(facing);
-                else if (auto it = visited.find(p); it != visited.end())
-                    std::cout << '*';
-                else
-                    std::cout << map.get(p);
-            }
-            std::cout << std::endl;
-        }
-    };
-
-    const auto shoot_cornerline_backwards = [&] {
-        auto behind = turn_right(turn_right(facing));
-        for (auto p = pos; map.checked_get(p) == '.'; p = p + behind)
-            visited[p].insert(facing);
-    };
-    shoot_cornerline_backwards();
-    while (true) {
-        for (auto _ : rv::iota(0, 2)) {
-            {
-                // if constexpr (debug_print)
-                //     print_map();
-                const auto next = pos + facing;
-                const auto [next_row, next_col] = next;
-                auto next_c = map.checked_get(next);
-                if (not next_c) {
-                    print_map();
-                    return circuit_positions.size();
-                }
-                if (*next_c == '#') {
-                    facing = turn_right(facing);
-                    shoot_cornerline_backwards();
-                    continue;
-                }
-                pos = next;
-            }
-            {
-                auto& crosses = visited[pos];
-                if (const auto next = pos + facing;
-                    crosses.contains(turn_right(facing)) and
-                    map.checked_get(next) == '.')
-                    circuit_positions.insert(next);
-                crosses.insert(facing);
-            }
-            break;
-        }
+    auto start = *ranges::find(cells, '^', map.cell_getter());
+    auto blockers = boost::unordered_set<vector2>{};
+    auto [path, _] = walk(map, start);
+    for (auto c : path | rv::keys | ranges::to<boost::unordered_set>) {
+        map.get(c) = '#';
+        auto [_, loop] = walk(map, start);
+        if (loop)
+            blockers.insert(c);
+        map.get(c) = '.';
     }
+    return blockers.size();
 }
 
 TEST_CASE("day6a", "[day6]") {
@@ -135,6 +101,31 @@ TEST_CASE("untouched", "[day6]") {
     REQUIRE(run_b(test_data) == 1);
 }
 
+TEST_CASE("untouched 2", "[day6]") {
+    const auto test_data = R"(....
+...#
+...#
+#^..
+..#.)";
+    REQUIRE(run_b(test_data) == 2);
+}
+
+TEST_CASE("reddit testcase", "[day6]") {
+    const auto test_data = R"(...........#.....#......
+...................#....
+...#.....##.............
+......................#.
+..................#.....
+..#.....................
+....................#...
+........................
+.#........^.............
+..........#..........#..
+..#.....#..........#....
+........#.....#..#......)";
+    REQUIRE(run_b(test_data) == 19);
+}
+
 TEST_CASE("day6b", "[day6]") {
     const auto [s, _, expected] = test_data[0];
     if (expected) {
@@ -147,6 +138,12 @@ TEST_CASE("day6b", "[day6]") {
 WEAK void entry() {
     using namespace day6;
     const auto input = get_input(AOC_DAY);
-    fmt::println("A: {}", run_a(input));
-    fmt::println("B: {}", run_b(input));
+    {
+        auto t = SimpleTimer("Part A");
+        fmt::println("A: {}", run_a(input));
+    }
+    {
+        auto t = SimpleTimer("Part B");
+        fmt::println("B: {}", run_b(input));
+    }
 }
