@@ -159,32 +159,13 @@ auto positions_to_moves(auto positions, bool numpad) {
            rv::join | ranges::to<std::vector>;
 }
 
-const auto sequence = [](auto s) {
+auto sequence(auto s) {
     const auto level1_positions =
         rv::concat(rv::single('A'), s) | rv::transform(number_keypad);
-    const auto level1_moves = positions_to_moves(level1_positions, true);
-    fmt::println("1pos: {}", level1_positions);
-    fmt::println("1mov: {}",
-                 fmt::join(level1_moves | rv::transform(btn_to_char), ""));
+    return sequence(level1_positions, 2);
+}
 
-    const auto level2_positions = rv::concat(rv::single('A'), level1_moves) |
-                                  rv::transform(direction_keypad);
-    const auto level2_moves = positions_to_moves(level2_positions, false);
-    fmt::println("2pos: {}", level2_positions);
-    fmt::println("2mov: {}",
-                 fmt::join(level2_moves | rv::transform(btn_to_char), ""));
-
-    const auto level3_positions = rv::concat(rv::single('A'), level2_moves) |
-                                  rv::transform(direction_keypad);
-    const auto level3_moves = positions_to_moves(level3_positions, false);
-    fmt::println("3pos: {}", level3_positions);
-    fmt::println("3mov: {}",
-                 fmt::join(level3_moves | rv::transform(btn_to_char), ""));
-
-    return level3_moves;
-};
-
-const auto sequence_length = [](auto s) {
+auto sequence_length(auto s) {
     return ranges::distance(sequence(s));
 };
 
