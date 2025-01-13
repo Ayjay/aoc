@@ -135,34 +135,34 @@ TEST_CASE("dirpad simulator", "[day21]") {
     REQUIRE(s == "A");
 }
 
-auto positions_to_moves(auto positions, bool numpad) {
-    const auto moves_to_nudges = [numpad](auto r) {
-        auto it = r.begin();
-        const auto [from_r, from_c] = *it++;
-        const auto [to_r, to_c] = *it;
-        const auto row_diff = to_r - from_r;
-        const auto rows = rv::repeat(dir_btn{row_diff < 0 ? up : down}) |
-                          rv::take(std::abs(row_diff));
-        const auto col_diff = to_c - from_c;
-        const auto cols = rv::repeat(dir_btn{col_diff < 0 ? left : right}) |
-                          rv::take(std::abs(col_diff));
-        const auto a = rv::single(dir_btn{'A'});
+std::string move_sequence(auto moves, int level) {
+    const auto [from_r, from_c] = from;
+    const auto [to_r, to_c] = to;
+    const auto row_diff = to_r - from_r;
+    const auto rows = rv::repeat(dir_btn{row_diff < 0 ? up : down}) |
+                      rv::take(std::abs(row_diff));
+    const auto col_diff = to_c - from_c;
+    const auto cols = rv::repeat(dir_btn{col_diff < 0 ? left : right}) |
+                      rv::take(std::abs(col_diff));
+    const auto a = rv::single(dir_btn{'A'});
 
-        if (numpad and (from_r == 3 and to_c == 0))
-            return rv::concat(rows, cols, a);
-        else if (not numpad and (from_r == 0 and to_c == 0))
-            return rv::concat(rows, cols, a);
-        else
-            return rv::concat(cols, rows, a);
-    };
-    return positions | rv::sliding(2) | rv::transform(moves_to_nudges) |
-           rv::join | ranges::to<std::vector>;
+    const auto possibles =
+        std::array{rv::concat(rows, cols, a), rv::concat(cols, rows, a)};
 }
+
+std::string best_path(char from, char to) {}
 
 auto sequence(auto s) {
     const auto level1_positions =
         rv::concat(rv::single('A'), s) | rv::transform(number_keypad);
-    return sequence(level1_positions, 2);
+    const auto best_sequence =
+        level1_positions | rv::sliding(2) | rv::for_each([](auto r) {
+            auto it = r.begin();
+            const auto first = *it++;
+            const auto second = *it++;
+            return best_path(first, second);
+        });
+    return ranges::accumulate(best_sequence, std::string{}, std::plus{});
 }
 
 auto sequence_length(auto s) {
