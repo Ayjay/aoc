@@ -23,6 +23,7 @@
 				"matepek.vscode-catch2-test-adapter"
 			],
 			"settings": {
+				"editor.formatOnSave": true,
 				"cmake.configureEnvironment": {
 					"CMAKE_TOOLCHAIN_FILE": "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
 				},
